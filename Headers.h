@@ -23,7 +23,6 @@
 - (CGFloat)getLabelHeight; 
 @end
 
-
 @interface CSCombinedListViewController : UIViewController
 -(void)_updateListViewContentInset;
 -(void)layoutListView;
@@ -56,9 +55,7 @@
 @interface SBUIFaceIDCoachingView : UIView
 @end
 
-NSString *baseString;
 NSString *textTime;
-NSString *newlyFormattedDate;
 CGFloat dateHeight;
 CGFloat timeHeight;
 CGFloat containerHeight;

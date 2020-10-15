@@ -29,498 +29,72 @@ static BOOL twentyfourHourTime(){
 
 	SBUILegibilityLabel *timeLabel = MSHookIvar<SBUILegibilityLabel*>(self, "_timeLabel");	
 	SBFLockScreenDateSubtitleDateView *dateLabel = MSHookIvar<SBFLockScreenDateSubtitleDateView*>(self, "_dateSubtitleView");	
+	
+	//if length == 0 it will crash
+	if(timeLabel.string.length){
+		//get the time excluding ":" -- thanks to u/w4llyb3ar on Reddit (https://www.reddit.com/user/w4llyb3ar/) for the initial direction here
+		NSString *hourString = [timeLabel.string substringWithRange:NSMakeRange(0, [timeLabel.string rangeOfString:@":"].location)];//for some reason the method used for finding the minutes' location doesn't work for hours (location - 1) so instead I grab the string from the range (0 - :), which produces the same thing
+		NSString *minString = [timeLabel.string substringFromIndex:([timeLabel.string rangeOfString:@":"].location + 1)];
 
-	NSUInteger count = timeLabel.string.length;
-
-	if(count == 4){ //single digit hour
+		//convert ^ to nsnumbers and then to words 
 		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+		NSNumber *hourValue = [numberFormatter numberFromString:hourString]; 
+		NSNumber *minValue = [numberFormatter numberFromString:minString]; 
 		[numberFormatter setNumberStyle:NSNumberFormatterSpellOutStyle];
+		NSString *hourWord = [numberFormatter stringFromNumber:hourValue];
+		NSString *minWord = [numberFormatter stringFromNumber:minValue];
 
-		//HOUR
-		NSString *firstChar = [NSString stringWithFormat:@"%c" , [timeLabel.string characterAtIndex:0]];
-		int firstCharInt = [firstChar intValue];
-		NSNumber *numberValue1 = [NSNumber numberWithInt:firstCharInt]; 
+		//special cases 
+		if(twentyfourHourTime()){
+			// reason for doubleValue conversions (https://stackoverflow.com/a/6605285)
+			if(([hourValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue]) && ([hourValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue])) // "oh + hourWord" for hour < 10, but > 0
+				hourWord = [@"oh " stringByAppendingString:hourWord];
 
-			NSString *wordNumber1 = [numberFormatter stringFromNumber:numberValue1];
+			if([hourString isEqualToString:@"00"]) // "twenty four" for 00 hours 
+				hourWord = @"twenty four";
 
-		//MINUTE p1
-		NSString *thirdChar = [NSString stringWithFormat:@"%c" , [timeLabel.string characterAtIndex:2]];
-		int thirdCharInt = [thirdChar intValue];
-		NSNumber *numberValue2 = [NSNumber numberWithInt:thirdCharInt]; 
+			if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "oh + minWord" for min < 10, but > 0
+				minWord = [@"oh " stringByAppendingString:minWord];
+				
+			if([minString isEqualToString:@"00"])  // "hundred" for 00 min 
+				minWord = @"hundred";
+		}
+		else{
+			if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "o' + minWord" for min < 10, but > 0
+				minWord = [@"o' " stringByAppendingString:minWord];
 
-			NSString *wordNumber2 = [numberFormatter stringFromNumber:numberValue2];
-		
-		//MINUTE p2
-		NSString *forthChar = [NSString stringWithFormat:@"%c" , [timeLabel.string characterAtIndex:3]];
-		int forthCharInt = [forthChar intValue];
-		NSNumber *numberValue3 = [NSNumber numberWithInt:forthCharInt]; 
+			if([minString isEqualToString:@"00"]) // "o' clock" for 00 min
+				minWord = @"o' clock";
+		}
 
-			NSString *wordNumber3 = [numberFormatter stringFromNumber:numberValue3];
+		//make one string from hours and minutes 
+		NSString *baseBaseString = ([NSString stringWithFormat:@"%@ %@",hourWord,minWord]);
 
-			//special cases
-			if([wordNumber2 isEqualToString:@"zero"] && [wordNumber3 isEqualToString:@"zero"]) {// on the hour -- o' clock
-				wordNumber2 = @"o'";
-				wordNumber3 = @"clock";
-			}
+		//remove any instances of "-" from the string that were created by the formatter
+		NSString *baseString = [baseBaseString stringByReplacingOccurrencesOfString:@"-" withString:@" "];
 
-			if([wordNumber2 isEqualToString:@"zero"] && ![wordNumber3 isEqualToString:@"zero"]){//for first minute being 0 its o'
-				wordNumber2 = @"o'";
-			} 
-
-			if([wordNumber2 isEqualToString:@"one"] && [wordNumber3 isEqualToString:@"one"]){//weird tens
-				wordNumber2 = @"eleven";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"one"] && [wordNumber3 isEqualToString:@"two"]){
-				wordNumber2 = @"twelve";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"one"] && [wordNumber3 isEqualToString:@"three"]){
-				wordNumber2 = @"thirteen";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"one"] && [wordNumber3 isEqualToString:@"four"]){
-				wordNumber2 = @"fourteen";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"one"] && [wordNumber3 isEqualToString:@"five"]){
-				wordNumber2 = @"fifteen";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"one"] && [wordNumber3 isEqualToString:@"six"]){
-				wordNumber2 = @"sixteen";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"one"] && [wordNumber3 isEqualToString:@"seven"]){
-				wordNumber2 = @"seventeen";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"one"] && [wordNumber3 isEqualToString:@"eight"]){
-				wordNumber2 = @"eighteen";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"one"] && [wordNumber3 isEqualToString:@"nine"]){
-				wordNumber2 = @"nineteen";
-				wordNumber3 = @"";
-			} 
-
-			//general corrections
-			if([wordNumber2 isEqualToString:@"one"] && [wordNumber3 isEqualToString:@"zero"]){
-				wordNumber2 = @"ten";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"two"] && [wordNumber3 isEqualToString:@"zero"]){
-				wordNumber2 = @"twenty";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"two"] && ![wordNumber3 isEqualToString:@"zero"]){
-				wordNumber2 = @"twenty";
-			} 
-			if([wordNumber2 isEqualToString:@"three"] && [wordNumber3 isEqualToString:@"zero"]){
-				wordNumber2 = @"thirty";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"three"] && ![wordNumber3 isEqualToString:@"zero"]){
-				wordNumber2 = @"thirty";
-			} 
-			if([wordNumber2 isEqualToString:@"four"] && [wordNumber3 isEqualToString:@"zero"]){
-				wordNumber2 = @"forty";
-				wordNumber3 = @"";
-			} 
-			if([wordNumber2 isEqualToString:@"four"] && ![wordNumber3 isEqualToString:@"zero"]){
-				wordNumber2 = @"forty";
-			} 
-			if([wordNumber2 isEqualToString:@"five"] && [wordNumber3 isEqualToString:@"zero"]) {
-				wordNumber2 = @"fifty";
-				wordNumber3 = @"";
-			}
-			if([wordNumber2 isEqualToString:@"five"] && ![wordNumber3 isEqualToString:@"zero"]) {
-				wordNumber2 = @"fifty";
-			}
-
-		//generate string 
-		baseString = [NSString stringWithFormat:@"%@ %@ %@", wordNumber1, wordNumber2, wordNumber3];
-		
+		//some style stuff that requires access to the new string 
 		if(fontStyle == 0){
 			textTime = baseString;
-			newlyFormattedDate = [dateLabel.string lowercaseString]; 
-			[dateLabel setString:newlyFormattedDate];
+			[dateLabel setString:[dateLabel.string lowercaseString]];
 		}
 		if(fontStyle == 1){
 			textTime = [baseString capitalizedString];
-			newlyFormattedDate = [dateLabel.string capitalizedString]; 
-			[dateLabel setString:newlyFormattedDate];
+			[dateLabel setString:[dateLabel.string capitalizedString]];
 		}
 		if(fontStyle == 2){
 			textTime = [baseString uppercaseString];
-			newlyFormattedDate = [dateLabel.string uppercaseString]; 
-			[dateLabel setString:newlyFormattedDate];
+			[dateLabel setString:[dateLabel.string uppercaseString]];
 		}
 
 		//using an NSMutableAttributedString as opposed to the standard NSString because I wanted to change the line spacing 
 		NSMutableAttributedString* attrString = [[NSMutableAttributedString  alloc] initWithString:textTime];
-		NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
-		
-		if(customAlignment == 0)
-			style.alignment = NSTextAlignmentLeft;
-		if(customAlignment == 1)
-			style.alignment = NSTextAlignmentCenter;
-		if(customAlignment == 2)
-			style.alignment = NSTextAlignmentRight;
-		
+		NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];		
 		[style setMaximumLineHeight:timeLabel.font.pointSize]; // limits line spacing (effectively shrinking it)
 		[attrString addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, textTime.length)];
 		
 		// sets my word string as label string
 		timeLabel.attributedText = attrString;
-	}
-
-	if(count == 5){ //double digit hour
-		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
-		[numberFormatter setNumberStyle:NSNumberFormatterSpellOutStyle];
-
-		//HOUR p1
-		NSString *firstChar = [NSString stringWithFormat:@"%c" , [timeLabel.string characterAtIndex:0]];
-		int firstCharInt = [firstChar intValue];
-		NSNumber *numberValue1 = [NSNumber numberWithInt:firstCharInt]; 
-
-			NSString *wordNumber1 = [numberFormatter stringFromNumber:numberValue1];
-
-		//HOUR p2
-		NSString *secondChar = [NSString stringWithFormat:@"%c" , [timeLabel.string characterAtIndex:1]];
-		int secondCharInt = [secondChar intValue];
-		NSNumber *numberValue2 = [NSNumber numberWithInt:secondCharInt]; 
-
-			NSString *wordNumber2 = [numberFormatter stringFromNumber:numberValue2];
-		
-		//MINUTE p1
-		NSString *thirdChar = [NSString stringWithFormat:@"%c" , [timeLabel.string characterAtIndex:3]];
-		int thirdCharInt = [thirdChar intValue];
-		NSNumber *numberValue3 = [NSNumber numberWithInt:thirdCharInt]; 
-
-			NSString *wordNumber3 = [numberFormatter stringFromNumber:numberValue3];
-
-		//MINUTE p2
-		NSString *forthChar = [NSString stringWithFormat:@"%c" , [timeLabel.string characterAtIndex:4]];
-		int forthCharInt = [forthChar intValue];
-		NSNumber *numberValue4 = [NSNumber numberWithInt:forthCharInt]; 
-
-			NSString *wordNumber4 = [numberFormatter stringFromNumber:numberValue4];
-
-		//24-hour time (always 4 digits/words)
-		if(twentyfourHourTime()){
-			//hour corrections
-			if([wordNumber1 isEqualToString:@"zero"] && [wordNumber2 isEqualToString:@"one"]) {
-				wordNumber1 = @"oh";
-				wordNumber2 = @"one";
-			}
-			if([wordNumber1 isEqualToString:@"zero"] && [wordNumber2 isEqualToString:@"two"]) {
-				wordNumber1 = @"oh";
-				wordNumber2 = @"two";
-			}
-			if([wordNumber1 isEqualToString:@"zero"] && [wordNumber2 isEqualToString:@"three"]) {
-				wordNumber1 = @"oh";
-				wordNumber2 = @"three";
-			}
-			if([wordNumber1 isEqualToString:@"zero"] && [wordNumber2 isEqualToString:@"four"]) {
-				wordNumber1 = @"oh";
-				wordNumber2 = @"four";
-			}
-			if([wordNumber1 isEqualToString:@"zero"] && [wordNumber2 isEqualToString:@"five"]) {
-				wordNumber1 = @"oh";
-				wordNumber2 = @"five";
-			}
-			if([wordNumber1 isEqualToString:@"zero"] && [wordNumber2 isEqualToString:@"six"]) {
-				wordNumber1 = @"oh";
-				wordNumber2 = @"six";
-			}
-			if([wordNumber1 isEqualToString:@"zero"] && [wordNumber2 isEqualToString:@"seven"]) {
-				wordNumber1 = @"oh";
-				wordNumber2 = @"seven";
-			}
-			if([wordNumber1 isEqualToString:@"zero"] && [wordNumber2 isEqualToString:@"eight"]) {
-				wordNumber1 = @"oh";
-				wordNumber2 = @"eight";
-			}
-			if([wordNumber1 isEqualToString:@"zero"] && [wordNumber2 isEqualToString:@"nine"]) {
-				wordNumber1 = @"oh";
-				wordNumber2 = @"nine";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"zero"]) {
-				wordNumber1 = @"ten";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"one"]) {
-				wordNumber1 = @"eleven";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"two"]) {
-				wordNumber1 = @"twelve";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"three"]) {
-				wordNumber1 = @"thirteen";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"four"]) {
-				wordNumber1 = @"fourteen";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"five"]) {
-				wordNumber1 = @"fifteen";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"six"]) {
-				wordNumber1 = @"sixteen";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"seven"]) {
-				wordNumber1 = @"seventeen";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"eight"]) {
-				wordNumber1 = @"eighteen";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"nine"]) {
-				wordNumber1 = @"nineteen";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"two"] && [wordNumber2 isEqualToString:@"zero"]) {
-				wordNumber1 = @"twenty";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"two"] && [wordNumber2 isEqualToString:@"one"]) {
-				wordNumber1 = @"twenty";
-				wordNumber2 = @"one";
-			}
-			if([wordNumber1 isEqualToString:@"two"] && [wordNumber2 isEqualToString:@"two"]) {
-				wordNumber1 = @"twenty";
-				wordNumber2 = @"two";
-			}
-			if([wordNumber1 isEqualToString:@"two"] && [wordNumber2 isEqualToString:@"three"]) {
-				wordNumber1 = @"twenty";
-				wordNumber2 = @"three";
-			}
-			if([wordNumber1 isEqualToString:@"two"] && [wordNumber2 isEqualToString:@"four"]) {
-				wordNumber1 = @"twenty";
-				wordNumber2 = @"four";
-			}
-
-			//special cases
-			if([wordNumber3 isEqualToString:@"zero"] && [wordNumber4 isEqualToString:@"zero"]) {// on the hour -- hundred
-				wordNumber3 = @"hundred'";
-				wordNumber4 = @"";
-			}
-
-			if([wordNumber3 isEqualToString:@"zero"] && ![wordNumber4 isEqualToString:@"zero"]){//for first minute being 0 its oh
-				wordNumber3 = @"oh";
-			} 
-
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"one"]){//weird tens
-				wordNumber3 = @"eleven";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"two"]){
-				wordNumber3 = @"twelve";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"three"]){
-				wordNumber3 = @"thirteen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"four"]){
-				wordNumber3 = @"fourteen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"five"]){
-				wordNumber3 = @"fifteen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"six"]){
-				wordNumber3 = @"sixteen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"seven"]){
-				wordNumber3 = @"seventeen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"eight"]){
-				wordNumber3 = @"eighteen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"nine"]){
-				wordNumber3 = @"nineteen";
-				wordNumber4 = @"";
-			} 
-
-			//general corrections
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"ten";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"two"] && [wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"twenty";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"two"] && ![wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"twenty";
-			} 
-			if([wordNumber3 isEqualToString:@"three"] && [wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"thirty";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"three"] && ![wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"thirty";
-			} 
-			if([wordNumber3 isEqualToString:@"four"] && [wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"forty";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"four"] && ![wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"forty";
-			} 
-			if([wordNumber3 isEqualToString:@"five"] && [wordNumber4 isEqualToString:@"zero"]) {
-				wordNumber3 = @"fifty";
-				wordNumber4 = @"";
-			}
-			if([wordNumber3 isEqualToString:@"five"] && ![wordNumber4 isEqualToString:@"zero"]) {
-				wordNumber3 = @"fifty";
-			}
-		}
-
-		//12-hour time
-		else{
-			//special cases
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"zero"]) {// double digit hours
-				wordNumber1 = @"ten";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"one"]) {
-				wordNumber1 = @"eleven";
-				wordNumber2 = @"";
-			}
-			if([wordNumber1 isEqualToString:@"one"] && [wordNumber2 isEqualToString:@"two"]) {
-				wordNumber1 = @"twelve";
-				wordNumber2 = @"";
-			}
-
-			if([wordNumber3 isEqualToString:@"zero"] && [wordNumber4 isEqualToString:@"zero"]) {// on the hour -- o' clock
-				wordNumber3 = @"o'";
-				wordNumber4 = @"clock";
-			}
-
-			if([wordNumber3 isEqualToString:@"zero"] && ![wordNumber4 isEqualToString:@"zero"]){//for first minute being 0 its o'
-				wordNumber3 = @"o'";
-			} 
-
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"one"]){//weird tens
-				wordNumber3 = @"eleven";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"two"]){
-				wordNumber3 = @"twelve";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"three"]){
-				wordNumber3 = @"thirteen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"four"]){
-				wordNumber3 = @"fourteen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"five"]){
-				wordNumber3 = @"fifteen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"six"]){
-				wordNumber3 = @"sixteen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"seven"]){
-				wordNumber3 = @"seventeen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"eight"]){
-				wordNumber3 = @"eighteen";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"nine"]){
-				wordNumber3 = @"nineteen";
-				wordNumber4 = @"";
-			} 
-
-			//general corrections
-			if([wordNumber3 isEqualToString:@"one"] && [wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"ten";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"two"] && [wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"twenty";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"two"] && ![wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"twenty";
-			} 
-			if([wordNumber3 isEqualToString:@"three"] && [wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"thirty";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"three"] && ![wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"thirty";
-			} 
-			if([wordNumber3 isEqualToString:@"four"] && [wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"forty";
-				wordNumber4 = @"";
-			} 
-			if([wordNumber3 isEqualToString:@"four"] && ![wordNumber4 isEqualToString:@"zero"]){
-				wordNumber3 = @"forty";
-			} 
-			if([wordNumber3 isEqualToString:@"five"] && [wordNumber4 isEqualToString:@"zero"]) {
-				wordNumber3 = @"fifty";
-				wordNumber4 = @"";
-			}
-			if([wordNumber3 isEqualToString:@"five"] && ![wordNumber4 isEqualToString:@"zero"]) {
-				wordNumber3 = @"fifty";
-			}
-		}
-
-		//generate string
-		baseString = [NSString stringWithFormat:@"%@ %@ %@ %@", wordNumber1, wordNumber2, wordNumber3, wordNumber4];
-
-		if(fontStyle == 0){
-			textTime = baseString;
-			newlyFormattedDate = [dateLabel.string lowercaseString]; 
-			[dateLabel setString:newlyFormattedDate];
-		}
-		if(fontStyle == 1){
-			textTime = [baseString capitalizedString];
-			newlyFormattedDate = [dateLabel.string capitalizedString]; 
-			[dateLabel setString:newlyFormattedDate];
-		}
-		if(fontStyle == 2){
-			textTime = [baseString uppercaseString];
-			newlyFormattedDate = [dateLabel.string uppercaseString]; 
-			[dateLabel setString:newlyFormattedDate];
-		}
-
-		//using an NSMutableAttributedString as opposed to the standard NSString because I wanted to change the line spacing 
-		NSMutableAttributedString* attrString = [[NSMutableAttributedString  alloc] initWithString:textTime];
-		NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
-		
-		if(customAlignment == 0)
-			style.alignment = NSTextAlignmentLeft;
-		if(customAlignment == 1)
-			style.alignment = NSTextAlignmentCenter;
-		if(customAlignment == 2)
-			style.alignment = NSTextAlignmentRight;
-		
-		[style setMaximumLineHeight:timeLabel.font.pointSize]; // limits line spacing (effectively shrinking it)
-		[attrString addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, textTime.length)];
-		
-		// sets my word string as label string
-		timeLabel.attributedText = attrString; 
 	}
 
 	//set my label's height to the dynamic one calculated below 
