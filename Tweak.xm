@@ -1,9 +1,9 @@
 #import "Headers.h"
 #import <notify.h>
 
-//TextTime
-//Made During COVID
 //Lightmann
+//Made During COVID
+//TextTime
 
 %group tweak
 // determine if device is set to 24-hour time (https://stackoverflow.com/a/7538489)
@@ -16,10 +16,9 @@ static BOOL twentyfourHourTime(){
 	NSRange amRange = [dateString rangeOfString:[formatter AMSymbol]];
 	NSRange pmRange = [dateString rangeOfString:[formatter PMSymbol]];
 	BOOL is24h = (amRange.location == NSNotFound && pmRange.location == NSNotFound);
-	if(is24h) //changed from here down
-		return YES;
-	else 
-		return NO;
+	//changed from here down
+	if(is24h) return YES;
+	else return NO;
 }
 
 %hook SBFLockScreenDateView
@@ -50,20 +49,20 @@ static BOOL twentyfourHourTime(){
 			if(([hourValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue]) && ([hourValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue])) // "oh + hourWord" for hour < 10, but > 0
 				hourWord = [@"oh " stringByAppendingString:hourWord];
 
-			if([hourString isEqualToString:@"00"]) // "twenty four" for 00 hours 
+			else if([hourString isEqualToString:@"00"]) // "twenty four" for 00 hours 
 				hourWord = @"twenty four";
 
-			if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "oh + minWord" for min < 10, but > 0
+			else if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "oh + minWord" for min < 10, but > 0
 				minWord = [@"oh " stringByAppendingString:minWord];
 				
-			if([minString isEqualToString:@"00"])  // "hundred" for 00 min 
+			else if([minString isEqualToString:@"00"])  // "hundred" for 00 min 
 				minWord = @"hundred";
 		}
 		else{
 			if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "o' + minWord" for min < 10, but > 0
 				minWord = [@"o' " stringByAppendingString:minWord];
 
-			if([minString isEqualToString:@"00"]) // "o' clock" for 00 min
+			else if([minString isEqualToString:@"00"]) // "o' clock" for 00 min
 				minWord = @"o' clock";
 		}
 
@@ -78,11 +77,11 @@ static BOOL twentyfourHourTime(){
 			textTime = baseString;
 			[dateLabel setString:[dateLabel.string lowercaseString]];
 		}
-		if(fontStyle == 1){
+		else if(fontStyle == 1){
 			textTime = [baseString capitalizedString];
 			[dateLabel setString:[dateLabel.string capitalizedString]];
 		}
-		if(fontStyle == 2){
+		else if(fontStyle == 2){
 			textTime = [baseString uppercaseString];
 			[dateLabel setString:[dateLabel.string uppercaseString]];
 		}
@@ -114,7 +113,7 @@ static BOOL twentyfourHourTime(){
 	if(fontSize == 0)
 		timeLabel.font = [timeLabel.font fontWithSize:int((kHeight*.1)-10)];
 
-	if(fontSize != 0)
+	else 
 		timeLabel.font = [timeLabel.font fontWithSize:int(((kHeight*.1)-10)+fontSize)];
 
 	dateLabel.font = [dateLabel.font fontWithSize:int(timeLabel.font.pointSize*.367)];
@@ -122,28 +121,28 @@ static BOOL twentyfourHourTime(){
 	if(fontWeight == 0)
 		timeLabel.font = [timeLabel.font fontWithSize:timeLabel.font.pointSize];
 
-	if(fontWeight == 1)
+	else if(fontWeight == 1)
 		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightUltraLight];
 
-	if(fontWeight == 2)
+	else if(fontWeight == 2)
 		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightThin];
 
-	if(fontWeight == 3)
+	else if(fontWeight == 3)
 		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightLight];
 
-	if(fontWeight == 4)
+	else if(fontWeight == 4)
 		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightRegular]; 
 		
-	if(fontWeight == 5)
+	else if(fontWeight == 5)
 		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightMedium]; 
 
-	if(fontWeight == 6)
+	else if(fontWeight == 6)
 		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightSemibold]; 
 		
-	if(fontWeight == 7)
+	else if(fontWeight == 7)
 		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightBold];
 
-	if(fontWeight == 8)
+	else if(fontWeight == 8)
 		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightHeavy];
 }
 
@@ -154,7 +153,7 @@ static BOOL twentyfourHourTime(){
 		%orig(CGRectMake(frame.origin.x, 96, frame.size.width, frame.size.height));
 
 	//if single line due to either of the reasons checked in the if, lower the label 
-	if(timeHeight < containerHeight && fontSize < 0)
+	else if(timeHeight < containerHeight && fontSize < 0)
 		%orig(CGRectMake(frame.origin.x, frame.origin.y+dateHeight, frame.size.width, frame.size.height));
 
 	else
@@ -183,9 +182,9 @@ static BOOL twentyfourHourTime(){
 			[UIView animateWithDuration:.1 animations:^{
 				if(customAlignment == 0)
 					timeLabel.textAlignment = NSTextAlignmentLeft;
-				if(customAlignment == 1)
+				else if(customAlignment == 1)
 					timeLabel.textAlignment = NSTextAlignmentCenter; 
-				if(customAlignment == 2)
+				else if(customAlignment == 2)
 					timeLabel.textAlignment = NSTextAlignmentRight;    
 			}];
 			if(customAlignment == 1)
@@ -233,9 +232,9 @@ static BOOL twentyfourHourTime(){
 	if(arg1 < .75 && (orientation == 1 || orientation == 2)){
 		if (customAlignment == 0)
 			%orig(-1.0);
-		if (customAlignment == 1)
+		else if (customAlignment == 1)
 			%orig(0.0); 
-		if (customAlignment == 2)
+		else if (customAlignment == 2)
 			%orig(1.0);
 	}
 	else{
@@ -269,7 +268,7 @@ static BOOL twentyfourHourTime(){
                                                   context:context].size;
 
     CGSize size = CGSizeMake(ceil(boundingBox.width), ceil(boundingBox.height));
-	timeHeight = size.height;//added
+	timeHeight = size.height;
     return size.height;
 }
 %end
@@ -279,7 +278,7 @@ static BOOL twentyfourHourTime(){
 %hook CSCombinedListViewController 
 -(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
     int notify_token2;
-    // Relayout on lockState change
+    // Relayout on screen turns on 
     notify_register_dispatch("me.lightmann.texttime/notif", &notify_token2, dispatch_get_main_queue(), ^(int token) {
         [self layoutListView];
     });
@@ -322,9 +321,9 @@ static BOOL twentyfourHourTime(){
 %end
 
 
-//make change when device lockState changes -- modified from Lower by s1ris (https://github.com/s1ris/Lower/blob/master/Tweak.xm)
-%hook SBLockStateAggregator
--(void)_updateLockState {
+//post notification when screen turns on
+%hook SBBacklightController
+-(void)turnOnScreenFullyWithBacklightSource:(long long)arg1 {
     CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("me.lightmann.texttime/notif"), nil, nil, true);
     %orig;
 }
@@ -349,9 +348,9 @@ static BOOL twentyfourHourTime(){
 
 	if(customAlignment == 0)
 		%orig(CGRectMake(-(kWidth/2)+lockGlyph.frame.size.width+5, frame.origin.y ,frame.size.width ,frame.size.height));
-	if(customAlignment == 1)
+	else if(customAlignment == 1)
 		%orig;
-	if(customAlignment == 2)
+	else if(customAlignment == 2)
 		%orig(CGRectMake((kWidth/2)-lockGlyph.frame.size.width-10, frame.origin.y, frame.size.width, frame.size.height));
 
 	if(hideLock)
@@ -370,37 +369,26 @@ static BOOL twentyfourHourTime(){
 
 
 //	PREFERENCES 
-static void loadPrefs() {
-  NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/me.lightmann.texttimeprefs.plist"];
-
-  if(prefs){
-    isEnabled = ( [prefs objectForKey:@"isEnabled"] ? [[prefs objectForKey:@"isEnabled"] boolValue] : YES );
-	customAlignment = ( [prefs valueForKey:@"customAlignment"] ? [[prefs valueForKey:@"customAlignment"] integerValue] : 1 );
-	fontStyle = ( [prefs valueForKey:@"fontStyle"] ? [[prefs valueForKey:@"fontStyle"] integerValue] : 0 );
-	fontWeight = ( [prefs objectForKey:@"fontWeight"] ? [[prefs objectForKey:@"fontWeight"] integerValue] : 0 );
-	fontSize = ( [prefs valueForKey:@"fontSize"] ? [[prefs valueForKey:@"fontSize"] floatValue] : 0 );
-	vibrancy = ( [prefs objectForKey:@"vibrancy"] ? [[prefs objectForKey:@"vibrancy"] boolValue] : NO );
-	hideDate = ( [prefs objectForKey:@"hideDate"] ? [[prefs objectForKey:@"hideDate"] boolValue] : NO );
-	compactDate = ( [prefs objectForKey:@"compactDate"] ? [[prefs objectForKey:@"compactDate"] boolValue] : NO );
-	hideLock = ( [prefs objectForKey:@"hideLock"] ? [[prefs objectForKey:@"hideLock"] boolValue] : NO );
-  }
-}
-
-static void initPrefs() {
-  // Copy the default preferences file when the actual preference file doesn't exist
-  NSString *path = @"/User/Library/Preferences/me.lightmann.texttimeprefs.plist";
-  NSString *pathDefault = @"/Library/PreferenceBundles/TextTimePrefs.bundle/defaults.plist";
-  NSFileManager *fileManager = [NSFileManager defaultManager];
-  if(![fileManager fileExistsAtPath:path]) {
-    [fileManager copyItemAtPath:pathDefault toPath:path error:nil];
-  }
+void preferencesChanged(){
+	NSDictionary *prefs = [[NSUserDefaults standardUserDefaults] persistentDomainForName:@"me.lightmann.texttimeprefs"];
+	if(prefs){
+		isEnabled = ([prefs objectForKey:@"isEnabled"] ? [[prefs valueForKey:@"isEnabled"] boolValue] : YES );
+		customAlignment = ([prefs objectForKey:@"customAlignment"] ? [[prefs valueForKey:@"customAlignment"] integerValue] : 1 );
+		fontStyle = ([prefs objectForKey:@"fontStyle"] ? [[prefs valueForKey:@"fontStyle"] integerValue] : 0 );
+		fontWeight = ([prefs objectForKey:@"fontWeight"] ? [[prefs valueForKey:@"fontWeight"] integerValue] : 0 );
+		fontSize = ([prefs objectForKey:@"fontSize"] ? [[prefs valueForKey:@"fontSize"] floatValue] : 0 );
+		vibrancy = ([prefs objectForKey:@"vibrancy"] ? [[prefs valueForKey:@"vibrancy"] boolValue] : NO );
+		hideDate = ([prefs objectForKey:@"hideDate"] ? [[prefs valueForKey:@"hideDate"] boolValue] : NO );
+		compactDate = ([prefs objectForKey:@"compactDate"] ? [[prefs valueForKey:@"compactDate"] boolValue] : NO );
+		hideLock = ([prefs objectForKey:@"hideLock"] ? [[prefs valueForKey:@"hideLock"] boolValue] : NO );
+	}
 }
 
 %ctor {
-	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)loadPrefs, CFSTR("me.lightmann.texttimeprefs-updated"), NULL, CFNotificationSuspensionBehaviorCoalesce);
-	initPrefs();
-	loadPrefs();
+	preferencesChanged();
+
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)preferencesChanged, CFSTR("me.lightmann.texttimeprefs-updated"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 
 	if(isEnabled)
-		%init(tweak)
+		%init(tweak);
 }

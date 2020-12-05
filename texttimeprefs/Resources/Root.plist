@@ -9,8 +9,6 @@
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>TextTime By Lightmann</string>
-			<key>footerText</key>
-			<string>*Some changes require a respring in order to take effect*</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -23,6 +21,8 @@
 			<string>isEnabled</string>
 			<key>label</key>
 			<string>Enabled (Respring Required)</string>
+			<key>PostNotification</key>
+			<string>me.lightmann.texttimeprefs-updated</string>
 		</dict>
 
 		<dict>
@@ -169,6 +169,8 @@
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Configuration</string>
+			<key>footerText</key>
+			<string>*Some changes require a respring in order to take effect*</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -181,6 +183,8 @@
 			<string>vibrancy</string>
 			<key>label</key>
 			<string>Vibrancy Effect</string>
+			<key>PostNotification</key>
+			<string>me.lightmann.texttimeprefs-updated</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -193,6 +197,8 @@
 			<string>hideDate</string>
 			<key>label</key>
 			<string>Hide Date</string>
+			<key>PostNotification</key>
+			<string>me.lightmann.texttimeprefs-updated</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -205,6 +211,8 @@
 			<string>compactDate</string>
 			<key>label</key>
 			<string>Compact Date</string>
+			<key>PostNotification</key>
+			<string>me.lightmann.texttimeprefs-updated</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -217,6 +225,8 @@
 			<string>hideLock</string>
 			<key>label</key>
 			<string>Hide Lock (iPhone X and above)</string>
+			<key>PostNotification</key>
+			<string>me.lightmann.texttimeprefs-updated</string>
 		</dict>
 
 		<dict>
