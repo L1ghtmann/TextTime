@@ -16,9 +16,10 @@ static BOOL twentyfourHourTime(){
 	NSRange amRange = [dateString rangeOfString:[formatter AMSymbol]];
 	NSRange pmRange = [dateString rangeOfString:[formatter PMSymbol]];
 	BOOL is24h = (amRange.location == NSNotFound && pmRange.location == NSNotFound);
-	//changed from here down
-	if(is24h) return YES;
-	else return NO;
+	if(is24h) 
+		return YES;
+	else 
+		return NO;
 }
 
 %hook SBFLockScreenDateView
@@ -29,7 +30,7 @@ static BOOL twentyfourHourTime(){
 	SBUILegibilityLabel *timeLabel = MSHookIvar<SBUILegibilityLabel*>(self, "_timeLabel");	
 	SBFLockScreenDateSubtitleDateView *dateLabel = MSHookIvar<SBFLockScreenDateSubtitleDateView*>(self, "_dateSubtitleView");	
 	
-	//if length == 0 it will crash
+	//if !length it will crash
 	if(timeLabel.string.length){
 		//get the time excluding ":" -- thanks to u/w4llyb3ar on Reddit (https://www.reddit.com/user/w4llyb3ar/) for the initial direction here
 		NSString *hourString = [timeLabel.string substringWithRange:NSMakeRange(0, [timeLabel.string rangeOfString:@":"].location)];//for some reason the method used for finding the minutes' location doesn't work for hours (location - 1) so instead I grab the string from the range (0 - :), which produces the same thing
@@ -146,20 +147,10 @@ static BOOL twentyfourHourTime(){
 		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightHeavy];
 }
 
-//positioning of time/date
+//get a value to be used later
 -(void)setFrame:(CGRect)frame{		
-	//make sure time stays at or below the standard position
-	if(frame.origin.y < 96)
-		%orig(CGRectMake(frame.origin.x, 96, frame.size.width, frame.size.height));
-
-	//if single line due to either of the reasons checked in the if, lower the label 
-	else if(timeHeight < containerHeight && fontSize < 0)
-		%orig(CGRectMake(frame.origin.x, frame.origin.y+dateHeight, frame.size.width, frame.size.height));
-
-	else
-		%orig;
-
-	//get a value to be used later
+	%orig;
+	
 	containerHeight = frame.size.height;
 }
 
@@ -246,12 +237,12 @@ static BOOL twentyfourHourTime(){
 - (void)setUseCompactDateFormat:(BOOL)arg1 {
 	SBFLockScreenDateSubtitleDateView *dateLabel = MSHookIvar<SBFLockScreenDateSubtitleDateView*>(self, "_dateSubtitleView");		
 	
-	if(compactDate)
-		arg1 = YES;
+	%orig(compactDate);
+
 	if(hideDate)
 		[dateLabel setHidden:YES];
 	else
-	 	%orig;
+		[dateLabel setHidden:NO];
 }
 
 %new
@@ -278,7 +269,7 @@ static BOOL twentyfourHourTime(){
 %hook CSCombinedListViewController 
 -(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
     int notify_token2;
-    // Relayout on screen turns on 
+    // Respond to posted notification (when screen turns on) 
     notify_register_dispatch("me.lightmann.texttime/notif", &notify_token2, dispatch_get_main_queue(), ^(int token) {
         [self layoutListView];
     });
@@ -333,28 +324,26 @@ static BOOL twentyfourHourTime(){
 //toggle vibrancy effect 
 %hook CSCoverSheetView
 -(void)setDateViewIsVibrant:(BOOL)arg1 {
-	if(vibrancy)
-		%orig(YES);
-	else	
-		%orig;
+	%orig(vibrancy);
 }
 %end
 
 
-//alignment and position of lock icon/hide lock icon
+//alignment and position + hiding of lock icon
 %hook SBUIProudLockIconView
 -(void)setFrame:(CGRect)frame{
 	UIView *lockGlyph = MSHookIvar<BSUICAPackageView*>(self, "_lockView");
 
 	if(customAlignment == 0)
 		%orig(CGRectMake(-(kWidth/2)+lockGlyph.frame.size.width+5, frame.origin.y ,frame.size.width ,frame.size.height));
-	else if(customAlignment == 1)
-		%orig;
 	else if(customAlignment == 2)
 		%orig(CGRectMake((kWidth/2)-lockGlyph.frame.size.width-10, frame.origin.y, frame.size.width, frame.size.height));
+	else
+		%orig;
 
 	if(hideLock)
 		[self setHidden:YES];
+	
 }
 %end
 

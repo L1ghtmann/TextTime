@@ -1,2 +1,2 @@
 # TextTime
-Show the time as text
+Display the time as text

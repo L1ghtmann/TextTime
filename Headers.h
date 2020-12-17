@@ -30,17 +30,12 @@
 @end
 
 @interface SpringBoard : UIApplication
-+(id) sharedApplication;
--(NSInteger) activeInterfaceOrientation;
-@end
-
-@interface SBLockStateAggregator : NSObject
-+(id) sharedInstance;
--(unsigned long long)lockState;
++(id)sharedApplication;
+-(NSInteger)activeInterfaceOrientation;
 @end
 
 @interface CSCoverSheetView : UIView 
-@property (assign,nonatomic) BOOL dateViewIsVibrant;                                                       
+@property(assign,nonatomic) BOOL dateViewIsVibrant;                                                       
 -(void)setDateViewIsVibrant:(BOOL)arg1 ;
 @end
 
@@ -55,6 +50,7 @@
 @interface SBUIFaceIDCoachingView : UIView
 @end
 
+//local
 NSString *textTime;
 CGFloat dateHeight;
 CGFloat timeHeight;
