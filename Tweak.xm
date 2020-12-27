@@ -5,7 +5,7 @@
 //Made During COVID
 //TextTime
 
-%group tweak
+%group Tweak
 // determine if device is set to 24-hour time (https://stackoverflow.com/a/7538489)
 static BOOL twentyfourHourTime(){
 	NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
@@ -264,9 +264,47 @@ static BOOL twentyfourHourTime(){
 }
 %end
 
+//post notification when screen turns on
+%hook SBBacklightController
+-(void)turnOnScreenFullyWithBacklightSource:(long long)arg1 {
+    CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("me.lightmann.texttime/notif"), nil, nil, true);
+    %orig;
+}
+%end
 
+//alignment and position + hiding of lock icon
+%hook SBUIProudLockIconView
+-(void)setFrame:(CGRect)frame{
+	UIView *lockGlyph = MSHookIvar<BSUICAPackageView*>(self, "_lockView");
+
+	if(customAlignment == 0)
+		%orig(CGRectMake(-(kWidth/2)+lockGlyph.frame.size.width+5, frame.origin.y ,frame.size.width ,frame.size.height));
+	else if(customAlignment == 2)
+		%orig(CGRectMake((kWidth/2)-lockGlyph.frame.size.width-10, frame.origin.y, frame.size.width, frame.size.height));
+	else
+		%orig;
+
+	if(hideLock)
+		[self setHidden:YES];
+	
+}
+%end
+
+//hide coaching view 
+%hook SBUIFaceIDCoachingView
+-(id)_label{	
+	return nil;
+}
+%end
+
+//end of main group
+
+%end
+
+
+%group Tweak_12
 // adjust nclist (notifications & music player) based on height of time+date -- modified from Lower by s1ris (https://github.com/s1ris/Lower/blob/master/Tweak.xm)
-%hook CSCombinedListViewController 
+%hook SBDashBoardCombinedListViewController 
 -(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
     int notify_token2;
     // Respond to posted notification (when screen turns on) 
@@ -311,49 +349,74 @@ static BOOL twentyfourHourTime(){
 }
 %end
 
-
-//post notification when screen turns on
-%hook SBBacklightController
--(void)turnOnScreenFullyWithBacklightSource:(long long)arg1 {
-    CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("me.lightmann.texttime/notif"), nil, nil, true);
-    %orig;
-}
-%end
-
-
 //toggle vibrancy effect 
-%hook CSCoverSheetView
+%hook SBDashBoardView 
 -(void)setDateViewIsVibrant:(BOOL)arg1 {
 	%orig(vibrancy);
 }
 %end
 
+//end of iOS 12 group
 
-//alignment and position + hiding of lock icon
-%hook SBUIProudLockIconView
--(void)setFrame:(CGRect)frame{
-	UIView *lockGlyph = MSHookIvar<BSUICAPackageView*>(self, "_lockView");
+%end
 
-	if(customAlignment == 0)
-		%orig(CGRectMake(-(kWidth/2)+lockGlyph.frame.size.width+5, frame.origin.y ,frame.size.width ,frame.size.height));
-	else if(customAlignment == 2)
-		%orig(CGRectMake((kWidth/2)-lockGlyph.frame.size.width-10, frame.origin.y, frame.size.width, frame.size.height));
+
+%group Tweak_13_14
+// adjust nclist (notifications & music player) based on height of time+date -- modified from Lower by s1ris (https://github.com/s1ris/Lower/blob/master/Tweak.xm)
+%hook CSCombinedListViewController  
+-(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
+    int notify_token2;
+    // Respond to posted notification (when screen turns on) 
+    notify_register_dispatch("me.lightmann.texttime/notif", &notify_token2, dispatch_get_main_queue(), ^(int token) {
+        [self layoutListView];
+    });
+    return %orig;
+}
+
+-(UIEdgeInsets)_listViewDefaultContentInsets {
+    UIEdgeInsets originalInsets = %orig;
+	int orientation = [[%c(SpringBoard) sharedApplication] activeInterfaceOrientation];
+    float yOffset;
+
+    if (orientation == 1 || orientation == 2)
+       yOffset = (timeHeight+(dateHeight/2))-containerHeight+5;
+    
+    else
+        yOffset = 0;
+
+    // Updates the insets
+    originalInsets.top += yOffset;
+    return originalInsets;
+}
+
+-(void)layoutListView {
+    %orig;
+    [self _updateListViewContentInset];
+}
+
+-(double)_minInsetsToPushDateOffScreen {
+    double orig = %orig;
+	int orientation = [[%c(SpringBoard) sharedApplication] activeInterfaceOrientation];
+    float yOffset;
+
+    if (orientation == 1 || orientation == 2)
+        yOffset = (timeHeight+(dateHeight/2))-containerHeight+5;
 	else
-		%orig;
+		yOffset = 0;
 
-	if(hideLock)
-		[self setHidden:YES];
-	
+    return orig + yOffset;
 }
 %end
 
-
-//hide coaching view 
-%hook SBUIFaceIDCoachingView
--(id)_label{	
-	return nil;
+//toggle vibrancy effect 
+%hook CSCoverSheetView 
+-(void)setDateViewIsVibrant:(BOOL)arg1 {
+	%orig(vibrancy);
 }
 %end
+
+//end of iOS 13+ group
+
 %end
 
 
@@ -378,6 +441,14 @@ void preferencesChanged(){
 
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)preferencesChanged, CFSTR("me.lightmann.texttimeprefs-updated"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 
-	if(isEnabled)
-		%init(tweak);
+	if(isEnabled){
+		%init(Tweak);
+
+		if(kCFCoreFoundationVersionNumber < 1600) {
+			%init(Tweak_12);
+		}
+		else{
+			%init(Tweak_13_14);
+		}
+	}
 }

@@ -23,18 +23,24 @@
 - (CGFloat)getLabelHeight; 
 @end
 
-@interface CSCombinedListViewController : UIViewController
+@interface CSCombinedListViewController : UIViewController //iOS 13
 -(void)_updateListViewContentInset;
 -(void)layoutListView;
 -(UIEdgeInsets)_listViewDefaultContentInsets;
 @end
 
-@interface SpringBoard : UIApplication
-+(id)sharedApplication;
--(NSInteger)activeInterfaceOrientation;
+@interface SBDashBoardCombinedListViewController : UIViewController //iOS 12
+-(void)_updateListViewContentInset;
+-(void)layoutListView;
+-(UIEdgeInsets)_listViewDefaultContentInsets;
 @end
 
-@interface CSCoverSheetView : UIView 
+@interface CSCoverSheetView : UIView  //iOS 13
+@property(assign,nonatomic) BOOL dateViewIsVibrant;                                                       
+-(void)setDateViewIsVibrant:(BOOL)arg1 ;
+@end
+
+@interface SBDashBoardView : UIView  //iOS 12
 @property(assign,nonatomic) BOOL dateViewIsVibrant;                                                       
 -(void)setDateViewIsVibrant:(BOOL)arg1 ;
 @end
@@ -48,6 +54,11 @@
 @end
 
 @interface SBUIFaceIDCoachingView : UIView
+@end
+
+@interface SpringBoard : UIApplication
++(id)sharedApplication;
+-(NSInteger)activeInterfaceOrientation;
 @end
 
 //local
