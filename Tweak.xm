@@ -5,8 +5,8 @@
 //Made During COVID
 //TextTime
 
-%group Tweak
-// determine if device is set to 24-hour time (https://stackoverflow.com/a/7538489)
+%group Main
+//determine if device is set to 24-hour time (https://stackoverflow.com/a/7538489)
 static BOOL twentyfourHourTime(){
 	NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
 	[formatter setLocale:[NSLocale currentLocale]];
@@ -16,10 +16,8 @@ static BOOL twentyfourHourTime(){
 	NSRange amRange = [dateString rangeOfString:[formatter AMSymbol]];
 	NSRange pmRange = [dateString rangeOfString:[formatter PMSymbol]];
 	BOOL is24h = (amRange.location == NSNotFound && pmRange.location == NSNotFound);
-	if(is24h) 
-		return YES;
-	else 
-		return NO;
+	if(is24h) return YES;
+	else return NO;
 }
 
 %hook SBFLockScreenDateView
@@ -94,11 +92,11 @@ static BOOL twentyfourHourTime(){
 		[attrString addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, textTime.length)];
 		
 		// sets my word string as label string
-		timeLabel.attributedText = attrString;
+		[timeLabel setAttributedText:attrString];
 	}
 
 	//set my label's height to the dynamic one calculated below 
-	timeLabel.frame = CGRectMake(timeLabel.frame.origin.x, timeLabel.frame.origin.y+10, self.bounds.size.width, [self getLabelHeight]);
+	[timeLabel setFrame:CGRectMake(timeLabel.frame.origin.x, timeLabel.frame.origin.y+10, self.bounds.size.width, [self getLabelHeight])];
 }
 
 //style stuff
@@ -109,7 +107,7 @@ static BOOL twentyfourHourTime(){
 	SBFLockScreenDateSubtitleDateView *dateLabel = MSHookIvar<SBFLockScreenDateSubtitleDateView*>(self, "_dateSubtitleView");	
 
 	//allow for word wrapping
-	timeLabel.numberOfLines = 0;
+	[timeLabel setNumberOfLines:0];
 
 	if(fontSize == 0)
 		timeLabel.font = [timeLabel.font fontWithSize:int((kHeight*.1)-10)];
@@ -163,7 +161,7 @@ static BOOL twentyfourHourTime(){
 	if(arg1 >= .75){
 		//fix alignment of time when switching to today view 
 		[UIView animateWithDuration:.1 animations:^{
-			timeLabel.textAlignment = NSTextAlignmentRight;     
+			[timeLabel setTextAlignment:NSTextAlignmentRight];     
 		}];
 		return CGRectMake((arg1*100)-92, x.origin.y, x.size.width, x.size.height);
 	}
@@ -172,11 +170,11 @@ static BOOL twentyfourHourTime(){
 		if(orientation == 1 || orientation == 2){
 			[UIView animateWithDuration:.1 animations:^{
 				if(customAlignment == 0)
-					timeLabel.textAlignment = NSTextAlignmentLeft;
+					[timeLabel setTextAlignment:NSTextAlignmentLeft];
 				else if(customAlignment == 1)
-					timeLabel.textAlignment = NSTextAlignmentCenter; 
+					[timeLabel setTextAlignment:NSTextAlignmentCenter]; 
 				else if(customAlignment == 2)
-					timeLabel.textAlignment = NSTextAlignmentRight;    
+					[timeLabel setTextAlignment:NSTextAlignmentRight];    
 			}];
 			if(customAlignment == 1)
 				return CGRectMake((arg1*100), x.origin.y, x.size.width, x.size.height);
@@ -186,7 +184,7 @@ static BOOL twentyfourHourTime(){
 		// fix alignment of time when horizontal
     	if (orientation == 3 || orientation == 4){
 			[UIView animateWithDuration:.1 animations:^{
-				timeLabel.textAlignment = NSTextAlignmentLeft;   
+				[timeLabel setTextAlignment:NSTextAlignmentLeft];   
 			}];
 			return CGRectMake(x.origin.x, x.origin.y, x.size.width, x.size.height);
 		}
@@ -297,14 +295,14 @@ static BOOL twentyfourHourTime(){
 }
 %end
 
-//end of main group
+//end of main group 
 
 %end
 
 
-%group Tweak_12
+%group VersionSpecific
 // adjust nclist (notifications & music player) based on height of time+date -- modified from Lower by s1ris (https://github.com/s1ris/Lower/blob/master/Tweak.xm)
-%hook SBDashBoardCombinedListViewController 
+%hook CombinedListViewController 
 -(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
     int notify_token2;
     // Respond to posted notification (when screen turns on) 
@@ -349,73 +347,20 @@ static BOOL twentyfourHourTime(){
 }
 %end
 
+//end of version specific group
+
+%end
+
+
+%group VersionSpecific2
 //toggle vibrancy effect 
-%hook SBDashBoardView 
+%hook MainView 
 -(void)setDateViewIsVibrant:(BOOL)arg1 {
 	%orig(vibrancy);
 }
 %end
 
-//end of iOS 12 group
-
-%end
-
-
-%group Tweak_13_14
-// adjust nclist (notifications & music player) based on height of time+date -- modified from Lower by s1ris (https://github.com/s1ris/Lower/blob/master/Tweak.xm)
-%hook CSCombinedListViewController  
--(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
-    int notify_token2;
-    // Respond to posted notification (when screen turns on) 
-    notify_register_dispatch("me.lightmann.texttime/notif", &notify_token2, dispatch_get_main_queue(), ^(int token) {
-        [self layoutListView];
-    });
-    return %orig;
-}
-
--(UIEdgeInsets)_listViewDefaultContentInsets {
-    UIEdgeInsets originalInsets = %orig;
-	int orientation = [[%c(SpringBoard) sharedApplication] activeInterfaceOrientation];
-    float yOffset;
-
-    if (orientation == 1 || orientation == 2)
-       yOffset = (timeHeight+(dateHeight/2))-containerHeight+5;
-    
-    else
-        yOffset = 0;
-
-    // Updates the insets
-    originalInsets.top += yOffset;
-    return originalInsets;
-}
-
--(void)layoutListView {
-    %orig;
-    [self _updateListViewContentInset];
-}
-
--(double)_minInsetsToPushDateOffScreen {
-    double orig = %orig;
-	int orientation = [[%c(SpringBoard) sharedApplication] activeInterfaceOrientation];
-    float yOffset;
-
-    if (orientation == 1 || orientation == 2)
-        yOffset = (timeHeight+(dateHeight/2))-containerHeight+5;
-	else
-		yOffset = 0;
-
-    return orig + yOffset;
-}
-%end
-
-//toggle vibrancy effect 
-%hook CSCoverSheetView 
--(void)setDateViewIsVibrant:(BOOL)arg1 {
-	%orig(vibrancy);
-}
-%end
-
-//end of iOS 13+ group
+//end of version specific 2 group
 
 %end
 
@@ -442,13 +387,17 @@ void preferencesChanged(){
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)preferencesChanged, CFSTR("me.lightmann.texttimeprefs-updated"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 
 	if(isEnabled){
-		%init(Tweak);
+		%init(Main);
 
-		if(kCFCoreFoundationVersionNumber < 1600) {
-			%init(Tweak_12);
+		NSString *combinedListViewControllerClass = @"SBDashBoardCombinedListViewController";
+		NSString *mainViewClass = @"SBDashBoardView";
+
+		if(SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"13")) {
+			combinedListViewControllerClass = @"CSCombinedListViewController";
+			mainViewClass = @"CSCoverSheetView";
 		}
-		else{
-			%init(Tweak_13_14);
-		}
+
+	    %init(VersionSpecific, CombinedListViewController = NSClassFromString(combinedListViewControllerClass));
+		%init(VersionSpecific2, MainView = NSClassFromString(mainViewClass));
 	}
 }
