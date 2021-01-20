@@ -23,7 +23,6 @@
 	SBFLockScreenDateSubtitleView* _customSubtitleView;
 }
 @property (assign,nonatomic) double alignmentPercent;         
-- (CGFloat)getLabelHeight; 
 @end
 
 @interface CSCombinedListViewController : UIViewController //iOS 13
@@ -65,7 +64,6 @@
 @end
 
 //local
-NSString *textTime;
 CGFloat dateHeight;
 CGFloat timeHeight;
 CGFloat containerHeight;
@@ -80,11 +78,12 @@ static int customAlignment;
 
 static int fontStyle;
 
-static int fontWeight;
-
 static CGFloat fontSize;
 
-static BOOL vibrancy;
-static BOOL hideDate;
+static CGFloat tfontWeight;
+static CGFloat dfontWeight;
+
 static BOOL compactDate;
+static BOOL hideDate;
 static BOOL hideLock;
+static BOOL vibrancy;

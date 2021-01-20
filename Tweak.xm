@@ -29,74 +29,77 @@ static BOOL twentyfourHourTime(){
 	SBFLockScreenDateSubtitleDateView *dateLabel = MSHookIvar<SBFLockScreenDateSubtitleDateView*>(self, "_dateSubtitleView");	
 	
 	//if !length it will crash
-	if(timeLabel.string.length){
+	if(timeLabel.string.length){ 
 		//get the time excluding ":" -- thanks to u/w4llyb3ar on Reddit (https://www.reddit.com/user/w4llyb3ar/) for the initial direction here
 		NSString *hourString = [timeLabel.string substringWithRange:NSMakeRange(0, [timeLabel.string rangeOfString:@":"].location)];//for some reason the method used for finding the minutes' location doesn't work for hours (location - 1) so instead I grab the string from the range (0 - :), which produces the same thing
 		NSString *minString = [timeLabel.string substringFromIndex:([timeLabel.string rangeOfString:@":"].location + 1)];
 
-		//convert ^ to nsnumbers and then to words 
+		//convert ^ to nsnumbers and then to text 
 		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
 		NSNumber *hourValue = [numberFormatter numberFromString:hourString]; 
 		NSNumber *minValue = [numberFormatter numberFromString:minString]; 
 		[numberFormatter setNumberStyle:NSNumberFormatterSpellOutStyle];
-		NSString *hourWord = [numberFormatter stringFromNumber:hourValue];
-		NSString *minWord = [numberFormatter stringFromNumber:minValue];
+		NSString *hourText = [numberFormatter stringFromNumber:hourValue];
+		NSString *minText = [numberFormatter stringFromNumber:minValue];
 
 		//special cases 
 		if(twentyfourHourTime()){
 			// reason for doubleValue conversions (https://stackoverflow.com/a/6605285)
-			if(([hourValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue]) && ([hourValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue])) // "oh + hourWord" for hour < 10, but > 0
-				hourWord = [@"oh " stringByAppendingString:hourWord];
+			if(([hourValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue]) && ([hourValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue])) // "oh + hourText" for hour < 10, but > 0
+				hourText = [@"oh " stringByAppendingString:hourText];
 
 			else if([hourString isEqualToString:@"00"]) // "twenty four" for 00 hours 
-				hourWord = @"twenty four";
+				hourText = @"twenty four";
 
-			else if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "oh + minWord" for min < 10, but > 0
-				minWord = [@"oh " stringByAppendingString:minWord];
+			else if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "oh + minText" for min < 10, but > 0
+				minText = [@"oh " stringByAppendingString:minText];
 				
 			else if([minString isEqualToString:@"00"])  // "hundred" for 00 min 
-				minWord = @"hundred";
+				minText = @"hundred";
 		}
 		else{
-			if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "o' + minWord" for min < 10, but > 0
-				minWord = [@"o' " stringByAppendingString:minWord];
+			if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "o' + minText" for min < 10, but > 0
+				minText = [@"o' " stringByAppendingString:minText];
 
 			else if([minString isEqualToString:@"00"]) // "o' clock" for 00 min
-				minWord = @"o' clock";
+				minText = @"o' clock";
 		}
 
 		//make one string from hours and minutes 
-		NSString *baseBaseString = ([NSString stringWithFormat:@"%@ %@",hourWord,minWord]);
+		NSString *baseString = [NSString stringWithFormat:@"%@ %@", hourText, minText];
 
 		//remove any instances of "-" from the string that were created by the formatter
-		NSString *baseString = [baseBaseString stringByReplacingOccurrencesOfString:@"-" withString:@" "];
-
-		//some style stuff that requires access to the new string 
-		if(fontStyle == 0){
-			textTime = baseString;
-			[dateLabel setString:[dateLabel.string lowercaseString]];
-		}
-		else if(fontStyle == 1){
-			textTime = [baseString capitalizedString];
-			[dateLabel setString:[dateLabel.string capitalizedString]];
-		}
-		else if(fontStyle == 2){
-			textTime = [baseString uppercaseString];
-			[dateLabel setString:[dateLabel.string uppercaseString]];
-		}
+		NSString *timeText = [baseString stringByReplacingOccurrencesOfString:@"-" withString:@" "];
 
 		//using an NSMutableAttributedString as opposed to the standard NSString because I wanted to change the line spacing 
-		NSMutableAttributedString* attrString = [[NSMutableAttributedString  alloc] initWithString:textTime];
+		NSMutableAttributedString* attrString = [[NSMutableAttributedString  alloc] initWithString:timeText];
 		NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];		
 		[style setMaximumLineHeight:timeLabel.font.pointSize]; // limits line spacing (effectively shrinking it)
-		[attrString addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, textTime.length)];
+		[attrString addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, timeText.length)];
 		
-		// sets my word string as label string
+		//sets the text string as label string
 		[timeLabel setAttributedText:attrString];
 	}
 
-	//set my label's height to the dynamic one calculated below 
-	[timeLabel setFrame:CGRectMake(timeLabel.frame.origin.x, timeLabel.frame.origin.y+10, self.bounds.size.width, [self getLabelHeight])];
+		//some style stuff that doesn't work in the format method below
+		if(fontStyle == 0){
+			[timeLabel setString:[timeLabel.attributedText.string lowercaseString]];
+			[dateLabel setString:[dateLabel.string lowercaseString]];
+		}
+		else if(fontStyle == 1){
+			[timeLabel setString:[timeLabel.attributedText.string capitalizedString]];
+			[dateLabel setString:[dateLabel.string capitalizedString]];
+		}
+		else if(fontStyle == 2){
+			[timeLabel setString:[timeLabel.attributedText.string uppercaseString]];
+			[dateLabel setString:[dateLabel.string uppercaseString]];
+		}
+
+	//set label height dynamically based on text (https://stackoverflow.com/a/27376578)
+	CGRect frame = timeLabel.frame;
+	frame.size.width = self.bounds.size.width;
+	frame.size.height = [timeLabel sizeThatFits:CGSizeMake(self.frame.size.width, CGFLOAT_MAX)].height;
+	[timeLabel setFrame:frame];
 }
 
 //style stuff
@@ -110,39 +113,11 @@ static BOOL twentyfourHourTime(){
 	[timeLabel setNumberOfLines:0];
 
 	if(fontSize == 0)
-		timeLabel.font = [timeLabel.font fontWithSize:int((kHeight*.1)-10)];
-
+		timeLabel.font = [UIFont systemFontOfSize:int((kHeight*.1)-10) weight:tfontWeight]; 
 	else 
-		timeLabel.font = [timeLabel.font fontWithSize:int(((kHeight*.1)-10)+fontSize)];
+		timeLabel.font = [UIFont systemFontOfSize:int((kHeight*.1)-10)+fontSize weight:tfontWeight]; 
 
-	dateLabel.font = [dateLabel.font fontWithSize:int(timeLabel.font.pointSize*.367)];
-
-	if(fontWeight == 0)
-		timeLabel.font = [timeLabel.font fontWithSize:timeLabel.font.pointSize];
-
-	else if(fontWeight == 1)
-		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightUltraLight];
-
-	else if(fontWeight == 2)
-		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightThin];
-
-	else if(fontWeight == 3)
-		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightLight];
-
-	else if(fontWeight == 4)
-		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightRegular]; 
-		
-	else if(fontWeight == 5)
-		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightMedium]; 
-
-	else if(fontWeight == 6)
-		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightSemibold]; 
-		
-	else if(fontWeight == 7)
-		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightBold];
-
-	else if(fontWeight == 8)
-		timeLabel.font = [UIFont systemFontOfSize:timeLabel.font.pointSize weight:UIFontWeightHeavy];
+	dateLabel.font = [UIFont systemFontOfSize:int(timeLabel.font.pointSize*.367) weight:dfontWeight]; 
 }
 
 //get a value to be used later
@@ -155,6 +130,7 @@ static BOOL twentyfourHourTime(){
 //alignment and position of time label 
 -(CGRect)_timeLabelFrameForAlignmentPercent:(double)arg1 {							
 	CGRect x = %orig;
+	timeHeight = x.size.height;
 	SBUILegibilityLabel *timeLabel = MSHookIvar<SBUILegibilityLabel*>(self, "_timeLabel");	
 	int orientation = [[%c(SpringBoard) sharedApplication] activeInterfaceOrientation];
 
@@ -163,7 +139,7 @@ static BOOL twentyfourHourTime(){
 		[UIView animateWithDuration:.1 animations:^{
 			[timeLabel setTextAlignment:NSTextAlignmentRight];     
 		}];
-		return CGRectMake((arg1*100)-92, x.origin.y, x.size.width, x.size.height);
+		return CGRectMake((arg1*100)-92, x.origin.y+10, x.size.width, x.size.height);
 	}
 	else{
 		//default time
@@ -177,9 +153,9 @@ static BOOL twentyfourHourTime(){
 					[timeLabel setTextAlignment:NSTextAlignmentRight];    
 			}];
 			if(customAlignment == 1)
-				return CGRectMake((arg1*100), x.origin.y, x.size.width, x.size.height);
+				return CGRectMake((arg1*100), x.origin.y+10, x.size.width, x.size.height);
 			else
-				return CGRectMake((arg1*10), x.origin.y, x.size.width, x.size.height);
+				return CGRectMake((arg1*10), x.origin.y+10, x.size.width, x.size.height);
 		} 
 		// fix alignment of time when horizontal
     	if (orientation == 3 || orientation == 4){
@@ -189,7 +165,6 @@ static BOOL twentyfourHourTime(){
 			return CGRectMake(x.origin.x, x.origin.y, x.size.width, x.size.height);
 		}
 	}
-
 	return x; 
 }
 
@@ -202,21 +177,21 @@ static BOOL twentyfourHourTime(){
 
 	//fix alignment of time when switching to today view 	
 	if(arg2 >= .75 && (orientation == 1 || orientation == 2)){
-		return CGRectMake(x.origin.x+5, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.5)), x.size.width, x.size.height);
+		return CGRectMake(x.origin.x+5, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
 	}
 	else{
 		//left aligned when normal
 		if(customAlignment == 0 && (orientation == 1 || orientation == 2))
-			return CGRectMake(x.origin.x-6.5, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.5)), x.size.width, x.size.height);
+			return CGRectMake(x.origin.x-6.5, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
 		// default and horizontal  
 		else
-			return CGRectMake(x.origin.x, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.5)), x.size.width, x.size.height);
+			return CGRectMake(x.origin.x, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
 	}
 	return x;
 }
 
 //custom alignment  
-- (void)setAlignmentPercent:(double)arg1 {
+-(void)setAlignmentPercent:(double)arg1 {
 	int orientation = [[%c(SpringBoard) sharedApplication] activeInterfaceOrientation];
 	if(arg1 < .75 && (orientation == 1 || orientation == 2)){
 		if (customAlignment == 0)
@@ -232,7 +207,7 @@ static BOOL twentyfourHourTime(){
 }
 
 //compact/hide date 
-- (void)setUseCompactDateFormat:(BOOL)arg1 {
+-(void)setUseCompactDateFormat:(BOOL)arg1 {
 	SBFLockScreenDateSubtitleDateView *dateLabel = MSHookIvar<SBFLockScreenDateSubtitleDateView*>(self, "_dateSubtitleView");		
 	
 	%orig(compactDate);
@@ -242,31 +217,13 @@ static BOOL twentyfourHourTime(){
 	else
 		[dateLabel setHidden:NO];
 }
-
-%new
-//get label height dynamically based on text (https://stackoverflow.com/a/27374760)
-- (CGFloat)getLabelHeight{
-	SBUILegibilityLabel *timeLabel = MSHookIvar<SBUILegibilityLabel*>(self, "_timeLabel");	
-
-    CGSize constraint = CGSizeMake(self.frame.size.width, CGFLOAT_MAX);
-
-    NSStringDrawingContext *context = [[NSStringDrawingContext alloc] init];
-    CGSize boundingBox = [textTime boundingRectWithSize:constraint
-                                                  options:NSStringDrawingUsesLineFragmentOrigin
-                                               attributes:@{NSFontAttributeName:timeLabel.font}
-                                                  context:context].size;
-
-    CGSize size = CGSizeMake(ceil(boundingBox.width), ceil(boundingBox.height));
-	timeHeight = size.height;
-    return size.height;
-}
 %end
 
-//post notification when screen turns on
 %hook SBBacklightController
 -(void)turnOnScreenFullyWithBacklightSource:(long long)arg1 {
-    CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("me.lightmann.texttime/notif"), nil, nil, true);
-    %orig;
+	//post notification when screen turns on
+    CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("me.lightmann.texttime/reposition"), nil, nil, true);
+	%orig;
 }
 %end
 
@@ -283,8 +240,7 @@ static BOOL twentyfourHourTime(){
 		%orig;
 
 	if(hideLock)
-		[self setHidden:YES];
-	
+		[self setHidden:YES];	
 }
 %end
 
@@ -304,12 +260,12 @@ static BOOL twentyfourHourTime(){
 // adjust nclist (notifications & music player) based on height of time+date -- modified from Lower by s1ris (https://github.com/s1ris/Lower/blob/master/Tweak.xm)
 %hook CombinedListViewController 
 -(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
-    int notify_token2;
+	int notify_token2;
     // Respond to posted notification (when screen turns on) 
-    notify_register_dispatch("me.lightmann.texttime/notif", &notify_token2, dispatch_get_main_queue(), ^(int token) {
+ 	notify_register_dispatch("me.lightmann.texttime/reposition", &notify_token2, dispatch_get_main_queue(), ^(int token) {
         [self layoutListView];
     });
-    return %orig;
+	return %orig;
 }
 
 -(UIEdgeInsets)_listViewDefaultContentInsets {
@@ -372,12 +328,13 @@ void preferencesChanged(){
 		isEnabled = ([prefs objectForKey:@"isEnabled"] ? [[prefs valueForKey:@"isEnabled"] boolValue] : YES );
 		customAlignment = ([prefs objectForKey:@"customAlignment"] ? [[prefs valueForKey:@"customAlignment"] integerValue] : 1 );
 		fontStyle = ([prefs objectForKey:@"fontStyle"] ? [[prefs valueForKey:@"fontStyle"] integerValue] : 0 );
-		fontWeight = ([prefs objectForKey:@"fontWeight"] ? [[prefs valueForKey:@"fontWeight"] integerValue] : 0 );
 		fontSize = ([prefs objectForKey:@"fontSize"] ? [[prefs valueForKey:@"fontSize"] floatValue] : 0 );
-		vibrancy = ([prefs objectForKey:@"vibrancy"] ? [[prefs valueForKey:@"vibrancy"] boolValue] : NO );
-		hideDate = ([prefs objectForKey:@"hideDate"] ? [[prefs valueForKey:@"hideDate"] boolValue] : NO );
+		tfontWeight = ([prefs objectForKey:@"tfontWeight"] ? [[prefs valueForKey:@"tfontWeight"] floatValue] : 0 );
+		dfontWeight = ([prefs objectForKey:@"dfontWeight"] ? [[prefs valueForKey:@"dfontWeight"] floatValue] : 0 );
 		compactDate = ([prefs objectForKey:@"compactDate"] ? [[prefs valueForKey:@"compactDate"] boolValue] : NO );
+		hideDate = ([prefs objectForKey:@"hideDate"] ? [[prefs valueForKey:@"hideDate"] boolValue] : NO );
 		hideLock = ([prefs objectForKey:@"hideLock"] ? [[prefs valueForKey:@"hideLock"] boolValue] : NO );
+		vibrancy = ([prefs objectForKey:@"vibrancy"] ? [[prefs valueForKey:@"vibrancy"] boolValue] : NO );
 	}
 }
 
