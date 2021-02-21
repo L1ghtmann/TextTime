@@ -29,11 +29,17 @@ static BOOL twentyfourHourTime(){
 %end
 
 %hook SBFLockScreenDateView
-// get a value to be used later
+// fix margin on 14+ and get a value to be used later
 -(void)setFrame:(CGRect)frame{		
-	%orig;
-	
-	containerHeight = frame.size.height;
+	if(SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"14.0") && [[self _viewControllerForAncestor] isMemberOfClass:%c(SBFLockScreenDateViewController)]){
+		if(customAlignment == 0)
+			frame.origin.x = frame.origin.x+(frame.origin.x*2);
+		else if(customAlignment == 2)
+			frame.origin.x = frame.origin.x-(frame.origin.x*2);
+	}
+
+	%orig(frame);
+	containerHeight = frame.size.height;	
 }
 
 // grab the views we're going to be working with, so we don't need to in the various methods where it's used 
@@ -55,8 +61,9 @@ static BOOL twentyfourHourTime(){
 	// if !length it will crash
 	if(timeLabel.string.length){ 
 		// get the time excluding ":" -- thanks to u/w4llyb3ar on Reddit for the initial direction here
-		NSString *hourString = [timeLabel.string substringWithRange:NSMakeRange(0, [timeLabel.string rangeOfString:@":"].location)];//for some reason the method used for finding the minutes' location doesn't work for hours (location - 1) so instead I grab the string from the range (0 - :), which produces the same thing
-		NSString *minString = [timeLabel.string substringFromIndex:([timeLabel.string rangeOfString:@":"].location + 1)];
+		NSArray *timeParts = [timeLabel.string componentsSeparatedByString:@":"];
+		NSString *hourString = timeParts.firstObject;
+		NSString *minString = timeParts.lastObject;
 
 		//convert ^ to nsnumbers and then to text 
 		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
@@ -170,7 +177,7 @@ static BOOL twentyfourHourTime(){
 // style stuff
 -(void)updateFormat{
 	%orig;
-
+	
 	// allow for word wrapping
 	[timeLabel setNumberOfLines:0];
 
@@ -190,37 +197,40 @@ static BOOL twentyfourHourTime(){
 	CGRect x = %orig;
 	timeHeight = x.size.height;
 
-	if(arg1 >= .75){
-		// fix alignment of time when switching to today view 
-		[UIView animateWithDuration:.1 animations:^{
-			[timeLabel setTextAlignment:NSTextAlignmentRight];     
-		}];
-		return CGRectMake((arg1*100)-92, x.origin.y+10, x.size.width, x.size.height);
-	}
-	else{
-		// portrait orientation 
-		if(orientation == 1 || orientation == 2){
+	if([[self _viewControllerForAncestor] isMemberOfClass:%c(SBFLockScreenDateViewController)]){
+		if(arg1 >= .75){
+			// fix alignment of time when switching to today view 
 			[UIView animateWithDuration:.1 animations:^{
-				if(customAlignment == 0)
-					[timeLabel setTextAlignment:NSTextAlignmentLeft];
-				else if(customAlignment == 1)
-					[timeLabel setTextAlignment:NSTextAlignmentCenter]; 
-				else if(customAlignment == 2)
-					[timeLabel setTextAlignment:NSTextAlignmentRight];    
+				[timeLabel setTextAlignment:NSTextAlignmentRight];     
 			}];
-			if(customAlignment == 1)
-				return CGRectMake((arg1*100), x.origin.y+10, x.size.width, x.size.height);
-			else
-				return CGRectMake((arg1*10), x.origin.y+10, x.size.width, x.size.height);
-		} 
-		// landscape orientation 
-    	if (orientation == 3 || orientation == 4){
-			[UIView animateWithDuration:.1 animations:^{
-				[timeLabel setTextAlignment:NSTextAlignmentLeft];   
-			}];
-			return CGRectMake(x.origin.x, x.origin.y, x.size.width, x.size.height);
+			return CGRectMake((arg1*100)-92, x.origin.y+10, x.size.width, x.size.height);
+		}
+		else{
+			// portrait orientation 
+			if(orientation == 1 || orientation == 2){
+				[UIView animateWithDuration:.1 animations:^{
+					if(customAlignment == 0)
+						[timeLabel setTextAlignment:NSTextAlignmentLeft];
+					else if(customAlignment == 1)
+						[timeLabel setTextAlignment:NSTextAlignmentCenter]; 
+					else if(customAlignment == 2)
+						[timeLabel setTextAlignment:NSTextAlignmentRight];    
+				}];
+				if(customAlignment == 1)
+					return CGRectMake((arg1*100), x.origin.y+10, x.size.width, x.size.height);
+				else
+					return CGRectMake((arg1*10), x.origin.y+10, x.size.width, x.size.height);
+			} 
+			// landscape orientation 
+			if (orientation == 3 || orientation == 4){
+				[UIView animateWithDuration:.1 animations:^{
+					[timeLabel setTextAlignment:NSTextAlignmentLeft];   
+				}];
+				return CGRectMake(x.origin.x, x.origin.y, x.size.width, x.size.height);
+			}
 		}
 	}
+
 	return x; 
 }
 
@@ -229,34 +239,37 @@ static BOOL twentyfourHourTime(){
 	CGRect x = %orig;
 	dateHeight = x.size.height;
 
-	// fix alignment of date when switching to today view 	
-	if(arg2 >= .75 && (orientation == 1 || orientation == 2)){
-		return CGRectMake(x.origin.x+5, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
-	}
-	else{
-		// portrait orientation 
-		if(orientation == 1 || orientation == 2){
-			[UIView animateWithDuration:.1 animations:^{
-				if(customAlignment == 0)
-					[dateLabel setTextAlignment:NSTextAlignmentLeft];
-				else if(customAlignment == 1)
-					[dateLabel setTextAlignment:NSTextAlignmentCenter]; 
-				else if(customAlignment == 2)
-					[dateLabel setTextAlignment:NSTextAlignmentRight];    
-			}];
-			if(customAlignment == 1)
+	if([[self _viewControllerForAncestor] isMemberOfClass:%c(SBFLockScreenDateViewController)]){
+		if(arg2 >= .75 && (orientation == 1 || orientation == 2)){
+			// fix alignment of date when switching to today view 	
+			return CGRectMake(x.origin.x+5, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
+		}
+		else{
+			// portrait orientation 
+			if(orientation == 1 || orientation == 2){
+				[UIView animateWithDuration:.1 animations:^{
+					if(customAlignment == 0)
+						[dateLabel setTextAlignment:NSTextAlignmentLeft];
+					else if(customAlignment == 1)
+						[dateLabel setTextAlignment:NSTextAlignmentCenter]; 
+					else if(customAlignment == 2)
+						[dateLabel setTextAlignment:NSTextAlignmentRight];    
+				}];
+				if(customAlignment == 1)
+					return CGRectMake(x.origin.x, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
+				else
+					return CGRectMake((arg2*10), (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
+			} 
+			// landscape orientation 
+			if (orientation == 3 || orientation == 4){
+				[UIView animateWithDuration:.1 animations:^{
+					[dateLabel setTextAlignment:NSTextAlignmentLeft];   
+				}];
 				return CGRectMake(x.origin.x, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
-			else
-				return CGRectMake((arg2*10), (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
-		} 
-		// landscape orientation 
-    	if (orientation == 3 || orientation == 4){
-			[UIView animateWithDuration:.1 animations:^{
-				[dateLabel setTextAlignment:NSTextAlignmentLeft];   
-			}];
-			return CGRectMake(x.origin.x, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
+			}
 		}
 	}
+
 	return x;
 }
 
