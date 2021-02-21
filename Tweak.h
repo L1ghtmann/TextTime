@@ -3,7 +3,9 @@
 //https://stackoverflow.com/a/5337804
 #define SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(v)  ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] != NSOrderedAscending)
 
-@interface SBUILegibilityLabel : UILabel
+@interface SBUILegibilityLabel : UILabel{
+	UILabel *_lookasideLabel;
+}
 -(void)setString:(NSString *)arg1 ;
 @property (nonatomic,copy) NSString * string;       
 @end
@@ -23,6 +25,7 @@
 	SBFLockScreenDateSubtitleView* _customSubtitleView;
 }
 @property (assign,nonatomic) double alignmentPercent;         
+-(void)updateFormat;
 @end
 
 @interface CSCombinedListViewController : UIViewController //iOS 13
@@ -59,17 +62,22 @@
 @end
 
 @interface SpringBoard : UIApplication
-+(id)sharedApplication;
++(UIApplication *)sharedApplication;
 -(NSInteger)activeInterfaceOrientation;
 @end
+
+#define kHeight [UIScreen mainScreen].bounds.size.height 
+#define kWidth [UIScreen mainScreen].bounds.size.width 
+
+static int orientation;
+static SBUILegibilityLabel *timeLabel;
+static SBFLockScreenDateSubtitleDateView *dateView;
+static SBUILegibilityLabel *dateLabel;
 
 //local
 CGFloat dateHeight;
 CGFloat timeHeight;
 CGFloat containerHeight;
-
-#define kHeight [UIScreen mainScreen].bounds.size.height 
-#define kWidth [UIScreen mainScreen].bounds.size.width 
 
 //prefs
 static BOOL isEnabled;
@@ -83,6 +91,7 @@ static CGFloat fontSize;
 static CGFloat tfontWeight;
 static CGFloat dfontWeight;
 
+static BOOL dateAsText;
 static BOOL compactDate;
 static BOOL hideDate;
 static BOOL hideLock;

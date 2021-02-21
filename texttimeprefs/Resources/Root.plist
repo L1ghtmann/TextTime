@@ -220,6 +220,20 @@
 			<key>defaults</key>
 			<string>me.lightmann.texttimeprefs</string>
 			<key>key</key>
+			<string>dateAsText</string>
+			<key>label</key>
+			<string>Date as Text</string>
+			<key>PostNotification</key>
+			<string>me.lightmann.texttimeprefs-updated</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>me.lightmann.texttimeprefs</string>
+			<key>key</key>
 			<string>compactDate</string>
 			<key>label</key>
 			<string>Compact Date</string>
