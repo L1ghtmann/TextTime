@@ -1,6 +1,6 @@
 Package: me.lightmann.texttime
 Name: TextTime
-Version: 1.0.2.1.1
+Version: 1.0.2.2
 Depends: mobilesubstrate, preferenceloader, firmware (>= 12.0)
 Architecture: iphoneos-arm
 Description: Display the time as text

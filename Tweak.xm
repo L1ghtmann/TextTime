@@ -7,7 +7,7 @@
 
 %group Main
 // determine if device is set to 24-hour time (https://stackoverflow.com/a/7538489)
-static BOOL twentyfourHourTime(){
+BOOL twentyfourHourTime(){
 	NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
 	[formatter setLocale:[NSLocale currentLocale]];
 	[formatter setDateStyle:NSDateFormatterNoStyle];
@@ -67,6 +67,7 @@ static BOOL twentyfourHourTime(){
 
 		//convert ^ to nsnumbers and then to text 
 		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+		[numberFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_US"]];
 		NSNumber *hourValue = [numberFormatter numberFromString:hourString]; 
 		NSNumber *minValue = [numberFormatter numberFromString:minString]; 
 		[numberFormatter setNumberStyle:NSNumberFormatterSpellOutStyle];
@@ -114,43 +115,55 @@ static BOOL twentyfourHourTime(){
 
 	// date label
 	// if !length it will crash
-	if(dateView.string.length && dateAsText){
-		NSScanner *scanner = [NSScanner scannerWithString:dateView.string];
-		NSCharacterSet *numbers = [NSCharacterSet characterSetWithCharactersInString:@"0123456789"];
+	if(dateView.string.length && dateAsText){ 
+		// grabbed a fair bit of this from (https://stackoverflow.com/a/5584679)
+		NSDate *date = [NSDate date]; 
+		NSCalendar *calendar = [NSCalendar currentCalendar];
+		NSInteger units = NSCalendarUnitWeekday | NSCalendarUnitMonth | NSCalendarUnitDay;
+		NSDateComponents *components = [calendar components:units fromDate:date];
+		NSInteger day = [components day];
+		NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
+	
+		NSDateFormatter *weekDay = [[NSDateFormatter alloc] init];
+		[weekDay setLocale:locale];
+		if(compactDate) [weekDay setDateFormat:@"EEE"];
+		else [weekDay setDateFormat:@"EEEE"];
 
-		//get day, month, and day number 
-		NSString *dayAndMonthString;
-		NSString *numberString;
-		[scanner scanUpToCharactersFromSet:numbers intoString:&dayAndMonthString];
-		[scanner scanCharactersFromSet:numbers intoString:&numberString];
+		NSDateFormatter *calMonth = [[NSDateFormatter alloc] init];
+		[calMonth setLocale:locale];
+		if(compactDate) [calMonth setDateFormat:@"MMM"];
+		else [calMonth setDateFormat:@"MMMM"];
 
-		//convert ^ day number to nsnumber and then to text 
 		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
-		NSNumber *dateValue = [numberFormatter numberFromString:numberString]; 
+		[numberFormatter setLocale:locale];
 		[numberFormatter setNumberStyle:NSNumberFormatterSpellOutStyle];
-		NSString *dateText = [numberFormatter stringFromNumber:dateValue];
+		NSString *dayText = [numberFormatter stringFromNumber:[NSNumber numberWithInteger:day]];
 
 		// make it colloquial  
-		if([dateText containsString:@"one"])  
-			dateText = [dateText stringByReplacingOccurrencesOfString: @"one" withString:@"first"];
+		if([dayText containsString:@"one"])  
+			dayText = [dayText stringByReplacingOccurrencesOfString: @"one" withString:@"first"];
 
-		else if([dateText containsString:@"two"])  
-			dateText = [dateText stringByReplacingOccurrencesOfString: @"two" withString:@"second"];
+		else if([dayText containsString:@"two"])  
+			dayText = [dayText stringByReplacingOccurrencesOfString: @"two" withString:@"second"];
 		
-		else if([dateText containsString:@"three"])  
-			dateText = [dateText stringByReplacingOccurrencesOfString: @"three" withString:@"third"];
+		else if([dayText containsString:@"three"])  
+			dayText = [dayText stringByReplacingOccurrencesOfString: @"three" withString:@"third"];
 
-		else if([dateValue doubleValue] == [[NSNumber numberWithInt:12] doubleValue]) 
-			dateText = @"twelfth";
+		else if([dayText containsString:@"five"])  
+			dayText = [dayText stringByReplacingOccurrencesOfString: @"five" withString:@"fifth"];
 
-		else if([dateValue doubleValue] == [[NSNumber numberWithInt:20] doubleValue] || [dateValue doubleValue] == [[NSNumber numberWithInt:30] doubleValue]) 
-			dateText = [[dateText substringToIndex:[dateText length]-1] stringByAppendingString:@"ieth"];
+		else if([dayText doubleValue] == [[NSNumber numberWithInt:12] doubleValue]) 
+			dayText = @"twelfth";
+
+		else if([[NSNumber numberWithInteger:day] doubleValue] == [[NSNumber numberWithInt:20] doubleValue] || [[NSNumber numberWithInteger:day] doubleValue] == [[NSNumber numberWithInt:30] doubleValue]) 
+			dayText = [[dayText substringToIndex:[dayText length]-1] stringByAppendingString:@"ieth"];
 
 		else
-			dateText = [dateText stringByAppendingString:@"th"];
+			dayText = [dayText stringByAppendingString:@"th"];
 
-		//set date label string as stock day and month string plus the new text string
-		[dateView setString:[NSString stringWithFormat:@"%@%@", dayAndMonthString, dateText]];
+		// remove extra label populated for some locales + set date label string 
+		[dateView.alternateDateLabel removeFromSuperview]; 
+		[dateView setString:[NSString stringWithFormat:@"%@%@ %@ %@", [weekDay stringFromDate:date], @",", [calMonth stringFromDate:date], dayText]];
 	}
 
 		// some style stuff that won't work in the format method below

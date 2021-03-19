@@ -20,7 +20,8 @@
 @end
 
 @interface SBFLockScreenDateSubtitleDateView : SBFLockScreenDateSubtitleView
-@property (assign,nonatomic) double alignmentPercent;                                          
+@property (assign,nonatomic) double alignmentPercent;    
+@property (nonatomic,retain) SBUILegibilityLabel * alternateDateLabel;              
 @end
 
 @interface SBFLockScreenDateView : UIView {
