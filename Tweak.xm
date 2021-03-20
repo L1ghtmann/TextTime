@@ -5,7 +5,6 @@
 // Made During COVID
 // TextTime
 
-%group Main
 // determine if device is set to 24-hour time (https://stackoverflow.com/a/7538489)
 BOOL twentyfourHourTime(){
 	NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
@@ -343,11 +342,8 @@ BOOL twentyfourHourTime(){
 	return nil;
 }
 %end
-// end of main group 
-%end
 
 
-%group VersionSpecific
 // adjust nclist (notifications & music player) based on height of time+date -- modified from Lower by s1ris (https://github.com/s1ris/Lower/blob/master/Tweak.xm)
 %hook CombinedListViewController 
 -(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
@@ -391,18 +387,13 @@ BOOL twentyfourHourTime(){
     return orig + yOffset;
 }
 %end
-// end of version specific group
-%end
 
 
-%group VersionSpecific2
 // toggle vibrancy effect 
 %hook MainView 
 -(void)setDateViewIsVibrant:(BOOL)arg1 {
 	%orig(vibrancy);
 }
-%end
-// end of version specific 2 group
 %end
 
 
@@ -428,8 +419,6 @@ void preferencesChanged(){
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)preferencesChanged, CFSTR("me.lightmann.texttimeprefs-updated"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 
 	if(isEnabled){
-		%init(Main);
-
 		NSString *combinedListViewControllerClass = @"SBDashBoardCombinedListViewController";
 		NSString *mainViewClass = @"SBDashBoardView";
 
@@ -438,7 +427,6 @@ void preferencesChanged(){
 			mainViewClass = @"CSCoverSheetView";
 		}
 
-	    %init(VersionSpecific, CombinedListViewController = NSClassFromString(combinedListViewControllerClass));
-		%init(VersionSpecific2, MainView = NSClassFromString(mainViewClass));
+		%init(CombinedListViewController = NSClassFromString(combinedListViewControllerClass), MainView = NSClassFromString(mainViewClass));
 	}
 }
