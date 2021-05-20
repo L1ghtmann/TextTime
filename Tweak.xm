@@ -30,7 +30,7 @@ BOOL twentyfourHourTime(){
 %hook SBFLockScreenDateView
 // fix margin on 14+ and get a value to be used later
 -(void)setFrame:(CGRect)frame{		
-	if(SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"14.0") && [[self _viewControllerForAncestor] isMemberOfClass:%c(SBFLockScreenDateViewController)]){
+	if(SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"14.0") && [[self _viewControllerForAncestor] isMemberOfClass:NSClassFromString(lockscreenDateVC)]){
 		if(customAlignment == 0)
 			frame.origin.x = frame.origin.x+(frame.origin.x*2);
 		else if(customAlignment == 2)
@@ -209,7 +209,7 @@ BOOL twentyfourHourTime(){
 	CGRect x = %orig;
 	timeHeight = x.size.height;
 
-	if([[self _viewControllerForAncestor] isMemberOfClass:%c(SBFLockScreenDateViewController)]){
+	if([[self _viewControllerForAncestor] isMemberOfClass:NSClassFromString(lockscreenDateVC)]){
 		if(arg1 >= .75){
 			// fix alignment of time when switching to today view 
 			[UIView animateWithDuration:.1 animations:^{
@@ -251,7 +251,7 @@ BOOL twentyfourHourTime(){
 	CGRect x = %orig;
 	dateHeight = x.size.height;
 
-	if([[self _viewControllerForAncestor] isMemberOfClass:%c(SBFLockScreenDateViewController)]){
+	if([[self _viewControllerForAncestor] isMemberOfClass:NSClassFromString(lockscreenDateVC)]){
 		if(arg2 >= .75 && (orientation == 1 || orientation == 2)){
 			// fix alignment of date when switching to today view 	
 			return CGRectMake(x.origin.x+5, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
@@ -419,10 +419,12 @@ void preferencesChanged(){
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)preferencesChanged, CFSTR("me.lightmann.texttimeprefs-updated"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 
 	if(isEnabled){
+		lockscreenDateVC = @"SBLockScreenDateViewController";
 		NSString *combinedListViewControllerClass = @"SBDashBoardCombinedListViewController";
 		NSString *mainViewClass = @"SBDashBoardView";
 
 		if(SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"13")) {
+			lockscreenDateVC = @"SBFLockScreenDateViewController";
 			combinedListViewControllerClass = @"CSCombinedListViewController";
 			mainViewClass = @"CSCoverSheetView";
 		}

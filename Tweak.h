@@ -80,6 +80,7 @@ static SBFLockScreenDateSubtitleDateView *dateView;
 static SBUILegibilityLabel *dateLabel;
 
 //local
+NSString *lockscreenDateVC;
 CGFloat dateHeight;
 CGFloat timeHeight;
 CGFloat containerHeight;
