@@ -1,9 +1,12 @@
+//
+//	Tweak.xm
+//	TextTime
+//
+//	Created by Lightmann during COVID-19
+//
+
 #import "Tweak.h"
 #import <notify.h>
-
-// Lightmann
-// Made During COVID
-// TextTime
 
 // determine if device is set to 24-hour time (https://stackoverflow.com/a/7538489)
 BOOL twentyfourHourTime(){
@@ -29,7 +32,7 @@ BOOL twentyfourHourTime(){
 
 %hook SBFLockScreenDateView
 // fix margin on 14+ and get a value to be used later
--(void)setFrame:(CGRect)frame{		
+-(void)setFrame:(CGRect)frame{
 	if(SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"14.0") && [[self _viewControllerForAncestor] isMemberOfClass:NSClassFromString(lockscreenDateVC)]){
 		if(customAlignment == 0)
 			frame.origin.x = frame.origin.x+(frame.origin.x*2);
@@ -38,16 +41,16 @@ BOOL twentyfourHourTime(){
 	}
 
 	%orig(frame);
-	containerHeight = frame.size.height;	
+	containerHeight = frame.size.height;
 }
 
-// grab the views we're going to be working with, so we don't need to in the various methods where it's used 
+// grab the views we're going to be working with, so we don't need to in the various methods where it's used
 -(void)setDate:(NSDate *)arg1 {
 	%orig;
 
-	timeLabel = MSHookIvar<SBUILegibilityLabel*>(self, "_timeLabel");	
-	dateView = MSHookIvar<SBFLockScreenDateSubtitleDateView*>(self, "_dateSubtitleView");	
-	dateLabel = MSHookIvar<SBUILegibilityLabel*>(dateView, "_label");	
+	timeLabel = MSHookIvar<SBUILegibilityLabel*>(self, "_timeLabel");
+	dateView = MSHookIvar<SBFLockScreenDateSubtitleDateView*>(self, "_dateSubtitleView");
+	dateLabel = MSHookIvar<SBUILegibilityLabel*>(dateView, "_label");
 
 	[self updateFormat]; // make sure to apply user preferences at initial loading of labels
 }
@@ -55,74 +58,74 @@ BOOL twentyfourHourTime(){
 // generate text and then change label to display said text instead of #s
 -(void)_updateLabels{
 	%orig;
-	
+
 	// time label
 	// if !length it will crash
-	if(timeLabel.string.length){ 
+	if(timeLabel.string.length){
 		// get the time excluding ":" -- thanks to u/w4llyb3ar on Reddit for the initial direction here
 		NSArray *timeParts = [timeLabel.string componentsSeparatedByString:@":"];
 		NSString *hourString = timeParts.firstObject;
 		NSString *minString = timeParts.lastObject;
 
-		//convert ^ to nsnumbers and then to text 
+		//convert ^ to nsnumbers and then to text
 		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
 		[numberFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_US"]];
-		NSNumber *hourValue = [numberFormatter numberFromString:hourString]; 
-		NSNumber *minValue = [numberFormatter numberFromString:minString]; 
+		NSNumber *hourValue = [numberFormatter numberFromString:hourString];
+		NSNumber *minValue = [numberFormatter numberFromString:minString];
 		[numberFormatter setNumberStyle:NSNumberFormatterSpellOutStyle];
 		NSString *hourText = [numberFormatter stringFromNumber:hourValue];
 		NSString *minText = [numberFormatter stringFromNumber:minValue];
 
-		// make it colloquial  
+		// make it colloquial
 		if(twentyfourHourTime()){
 			// reason for doubleValue conversions (https://stackoverflow.com/a/6605285)
 			if(([hourValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue]) && ([hourValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue])) // "oh + hourText" for hour < 10, but > 0
 				hourText = [@"oh " stringByAppendingString:hourText];
 
-			else if([hourString isEqualToString:@"00"]) 
+			else if([hourString isEqualToString:@"00"])
 				hourText = @"twenty four";
 
 			else if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "oh + minText" for min < 10, but > 0
 				minText = [@"oh " stringByAppendingString:minText];
-				
-			else if([minString isEqualToString:@"00"])  
+
+			else if([minString isEqualToString:@"00"])
 				minText = @"hundred";
 		}
 		else{
 			if([minValue doubleValue] > [[NSNumber numberWithInt:0] doubleValue] && [minValue doubleValue] < [[NSNumber numberWithInt:10] doubleValue]) // "o' + minText" for min < 10, but > 0
 				minText = [@"o' " stringByAppendingString:minText];
 
-			else if([minString isEqualToString:@"00"]) 
+			else if([minString isEqualToString:@"00"])
 				minText = @"o' clock";
 		}
 
-		// make one string from hours and minutes 
+		// make one string from hours and minutes
 		NSString *baseString = [NSString stringWithFormat:@"%@ %@", hourText, minText];
 
 		// remove any instances of "-" from the string that were created by the formatter
 		NSString *timeText = [baseString stringByReplacingOccurrencesOfString:@"-" withString:@" "];
 
-		// using an NSMutableAttributedString as opposed to the standard NSString because I wanted to change the line spacing 
+		// using an NSMutableAttributedString as opposed to the standard NSString because I wanted to change the line spacing
 		NSMutableAttributedString* attrString = [[NSMutableAttributedString  alloc] initWithString:timeText];
-		NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];		
+		NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
 		[style setMaximumLineHeight:timeLabel.font.pointSize]; // limits line spacing (effectively shrinking it)
 		[attrString addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, timeText.length)];
-		
+
 		// sets the new text string as label string
 		[timeLabel setAttributedText:attrString];
 	}
 
 	// date label
 	// if !length it will crash
-	if(dateView.string.length && dateAsText){ 
+	if(dateView.string.length && dateAsText){
 		// grabbed a fair bit of this from (https://stackoverflow.com/a/5584679)
-		NSDate *date = [NSDate date]; 
+		NSDate *date = [NSDate date];
 		NSCalendar *calendar = [NSCalendar currentCalendar];
 		NSInteger units = NSCalendarUnitWeekday | NSCalendarUnitMonth | NSCalendarUnitDay;
 		NSDateComponents *components = [calendar components:units fromDate:date];
 		NSInteger day = [components day];
 		NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
-	
+
 		NSDateFormatter *weekDay = [[NSDateFormatter alloc] init];
 		[weekDay setLocale:locale];
 		if(compactDate) [weekDay setDateFormat:@"EEE"];
@@ -138,30 +141,30 @@ BOOL twentyfourHourTime(){
 		[numberFormatter setNumberStyle:NSNumberFormatterSpellOutStyle];
 		NSString *dayText = [numberFormatter stringFromNumber:[NSNumber numberWithInteger:day]];
 
-		// make it colloquial  
-		if([dayText containsString:@"one"])  
+		// make it colloquial
+		if([dayText containsString:@"one"])
 			dayText = [dayText stringByReplacingOccurrencesOfString: @"one" withString:@"first"];
 
-		else if([dayText containsString:@"two"])  
+		else if([dayText containsString:@"two"])
 			dayText = [dayText stringByReplacingOccurrencesOfString: @"two" withString:@"second"];
-		
-		else if([dayText containsString:@"three"])  
+
+		else if([dayText containsString:@"three"])
 			dayText = [dayText stringByReplacingOccurrencesOfString: @"three" withString:@"third"];
 
-		else if([dayText containsString:@"five"])  
+		else if([dayText containsString:@"five"])
 			dayText = [dayText stringByReplacingOccurrencesOfString: @"five" withString:@"fifth"];
 
-		else if([dayText doubleValue] == [[NSNumber numberWithInt:12] doubleValue]) 
+		else if([dayText doubleValue] == [[NSNumber numberWithInt:12] doubleValue])
 			dayText = @"twelfth";
 
-		else if([[NSNumber numberWithInteger:day] doubleValue] == [[NSNumber numberWithInt:20] doubleValue] || [[NSNumber numberWithInteger:day] doubleValue] == [[NSNumber numberWithInt:30] doubleValue]) 
+		else if([[NSNumber numberWithInteger:day] doubleValue] == [[NSNumber numberWithInt:20] doubleValue] || [[NSNumber numberWithInteger:day] doubleValue] == [[NSNumber numberWithInt:30] doubleValue])
 			dayText = [[dayText substringToIndex:[dayText length]-1] stringByAppendingString:@"ieth"];
 
 		else
 			dayText = [dayText stringByAppendingString:@"th"];
 
-		// remove extra label populated for some locales + set date label string 
-		[dateView.alternateDateLabel removeFromSuperview]; 
+		// remove extra label populated for some locales + set date label string
+		[dateView.alternateDateLabel removeFromSuperview];
 		[dateView setString:[NSString stringWithFormat:@"%@%@ %@ %@", [weekDay stringFromDate:date], @",", [calMonth stringFromDate:date], dayText]];
 	}
 
@@ -182,100 +185,100 @@ BOOL twentyfourHourTime(){
 	//set time label height dynamically based on text (https://stackoverflow.com/a/27376578)
 	[timeLabel setFrame:CGRectMake(timeLabel.frame.origin.x, timeLabel.frame.origin.y+10, self.bounds.size.width, [timeLabel sizeThatFits:CGSizeMake(self.frame.size.width, CGFLOAT_MAX)].height)];
 
-	// prevent date label from getting clipped										
+	// prevent date label from getting clipped
 	[dateView setFrame:CGRectMake(dateView.frame.origin.x, dateView.frame.origin.y, [dateLabel sizeThatFits:CGSizeMake(dateLabel.frame.size.height, CGFLOAT_MAX)].width, dateView.frame.size.height)];
 }
 
 // style stuff
 -(void)updateFormat{
 	%orig;
-	
+
 	// allow for word wrapping
 	[timeLabel setNumberOfLines:0];
 
-	//prevent date label (font) from shrinking 
+	//prevent date label (font) from shrinking
 	[dateLabel setAdjustsFontSizeToFitWidth:NO];
 
 	if(fontSize == 0)
-		timeLabel.font = [UIFont systemFontOfSize:int((kHeight*.1)-10) weight:tfontWeight]; 
-	else 
-		timeLabel.font = [UIFont systemFontOfSize:int((kHeight*.1)-10)+fontSize weight:tfontWeight]; 
+		timeLabel.font = [UIFont systemFontOfSize:int((kHeight*.1)-10) weight:tfontWeight];
+	else
+		timeLabel.font = [UIFont systemFontOfSize:int((kHeight*.1)-10)+fontSize weight:tfontWeight];
 
-	dateView.font = [UIFont systemFontOfSize:int(timeLabel.font.pointSize*.367) weight:dfontWeight]; 
+	dateView.font = [UIFont systemFontOfSize:int(timeLabel.font.pointSize*.367) weight:dfontWeight];
 }
 
-// alignment and position for time label 
--(CGRect)_timeLabelFrameForAlignmentPercent:(double)arg1 {							
+// alignment and position for time label
+-(CGRect)_timeLabelFrameForAlignmentPercent:(double)arg1 {
 	CGRect x = %orig;
 	timeHeight = x.size.height;
 
 	if([[self _viewControllerForAncestor] isMemberOfClass:NSClassFromString(lockscreenDateVC)]){
 		if(arg1 >= .75){
-			// fix alignment of time when switching to today view 
+			// fix alignment of time when switching to today view
 			[UIView animateWithDuration:.1 animations:^{
-				[timeLabel setTextAlignment:NSTextAlignmentRight];     
+				[timeLabel setTextAlignment:NSTextAlignmentRight];
 			}];
 			return CGRectMake((arg1*100)-92, x.origin.y+10, x.size.width, x.size.height);
 		}
 		else{
-			// portrait orientation 
+			// portrait orientation
 			if(orientation == 1 || orientation == 2){
 				[UIView animateWithDuration:.1 animations:^{
 					if(customAlignment == 0)
 						[timeLabel setTextAlignment:NSTextAlignmentLeft];
 					else if(customAlignment == 1)
-						[timeLabel setTextAlignment:NSTextAlignmentCenter]; 
+						[timeLabel setTextAlignment:NSTextAlignmentCenter];
 					else if(customAlignment == 2)
-						[timeLabel setTextAlignment:NSTextAlignmentRight];    
+						[timeLabel setTextAlignment:NSTextAlignmentRight];
 				}];
 				if(customAlignment == 1)
 					return CGRectMake((arg1*100), x.origin.y+10, x.size.width, x.size.height);
 				else
 					return CGRectMake((arg1*10), x.origin.y+10, x.size.width, x.size.height);
-			} 
-			// landscape orientation 
+			}
+			// landscape orientation
 			if (orientation == 3 || orientation == 4){
 				[UIView animateWithDuration:.1 animations:^{
-					[timeLabel setTextAlignment:NSTextAlignmentLeft];   
+					[timeLabel setTextAlignment:NSTextAlignmentLeft];
 				}];
 				return CGRectMake(x.origin.x, x.origin.y, x.size.width, x.size.height);
 			}
 		}
 	}
 
-	return x; 
+	return x;
 }
 
 // alignment and position for date/charging labels
--(CGRect)_subtitleViewFrameForView:(UIView*)arg1 alignmentPercent:(double)arg2 {		
+-(CGRect)_subtitleViewFrameForView:(UIView*)arg1 alignmentPercent:(double)arg2 {
 	CGRect x = %orig;
 	dateHeight = x.size.height;
 
 	if([[self _viewControllerForAncestor] isMemberOfClass:NSClassFromString(lockscreenDateVC)]){
 		if(arg2 >= .75 && (orientation == 1 || orientation == 2)){
-			// fix alignment of date when switching to today view 	
+			// fix alignment of date when switching to today view
 			return CGRectMake(x.origin.x+5, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
 		}
 		else{
-			// portrait orientation 
+			// portrait orientation
 			if(orientation == 1 || orientation == 2){
 				[UIView animateWithDuration:.1 animations:^{
 					if(customAlignment == 0)
 						[dateLabel setTextAlignment:NSTextAlignmentLeft];
 					else if(customAlignment == 1)
-						[dateLabel setTextAlignment:NSTextAlignmentCenter]; 
+						[dateLabel setTextAlignment:NSTextAlignmentCenter];
 					else if(customAlignment == 2)
-						[dateLabel setTextAlignment:NSTextAlignmentRight];    
+						[dateLabel setTextAlignment:NSTextAlignmentRight];
 				}];
 				if(customAlignment == 1)
 					return CGRectMake(x.origin.x, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
 				else
 					return CGRectMake((arg2*10), (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
-			} 
-			// landscape orientation 
+			}
+			// landscape orientation
 			if (orientation == 3 || orientation == 4){
 				[UIView animateWithDuration:.1 animations:^{
-					[dateLabel setTextAlignment:NSTextAlignmentLeft];   
+					[dateLabel setTextAlignment:NSTextAlignmentLeft];
 				}];
 				return CGRectMake(x.origin.x, (timeLabel.frame.origin.y+timeLabel.frame.size.height-(x.size.height*.2)), x.size.width, x.size.height);
 			}
@@ -285,13 +288,13 @@ BOOL twentyfourHourTime(){
 	return x;
 }
 
-// custom alignment  
+// custom alignment
 -(void)setAlignmentPercent:(double)arg1 {
 	if(arg1 < .75 && (orientation == 1 || orientation == 2)){
 		if (customAlignment == 0)
 			%orig(-1.0);
 		else if (customAlignment == 1)
-			%orig(0.0); 
+			%orig(0.0);
 		else if (customAlignment == 2)
 			%orig(1.0);
 	}
@@ -300,8 +303,8 @@ BOOL twentyfourHourTime(){
 	}
 }
 
-// compact + hide date 
--(void)setUseCompactDateFormat:(BOOL)arg1 {	
+// compact + hide date
+-(void)setUseCompactDateFormat:(BOOL)arg1 {
 	%orig(compactDate);
 
 	if(hideDate)
@@ -324,80 +327,80 @@ BOOL twentyfourHourTime(){
 		%orig;
 
 	if(hideLock)
-		[self setHidden:YES];	
+		[self setHidden:YES];
 }
 %end
 
 // post notification when screen turns on (used for positioning below)
 %hook SBBacklightController
 -(void)turnOnScreenFullyWithBacklightSource:(long long)arg1 {
-    CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("me.lightmann.texttime/reposition"), nil, nil, true);
+	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("me.lightmann.texttime/reposition"), nil, nil, true);
 	%orig;
 }
 %end
 
 // hide facedID coaching label
 %hook SBUIFaceIDCoachingView
--(id)_label{	
+-(id)_label{
 	return nil;
 }
 %end
 
 
 // adjust nclist (notifications & music player) based on height of time+date -- modified from Lower by s1ris (https://github.com/s1ris/Lower/blob/master/Tweak.xm)
-%hook CombinedListViewController 
+%hook CombinedListViewController
 -(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
 	int notify_token2;
-    // Respond to posted notification (when screen turns on) 
+	// Respond to posted notification (when screen turns on)
  	notify_register_dispatch("me.lightmann.texttime/reposition", &notify_token2, dispatch_get_main_queue(), ^(int token) {
-        [self layoutListView];
-    });
+		[self layoutListView];
+	});
 	return %orig;
 }
 
 -(UIEdgeInsets)_listViewDefaultContentInsets {
-    UIEdgeInsets originalInsets = %orig;
-    float yOffset;
+	UIEdgeInsets originalInsets = %orig;
+	float yOffset;
 
-    if (orientation == 1 || orientation == 2)
-       yOffset = (timeHeight+(dateHeight/2))-containerHeight+5;
-    
-    else
-        yOffset = 0;
+	if (orientation == 1 || orientation == 2)
+	   yOffset = (timeHeight+(dateHeight/2))-containerHeight+5;
 
-    // update the insets
-    originalInsets.top += yOffset;
-    return originalInsets;
-}
-
--(void)layoutListView {
-    %orig;
-    [self _updateListViewContentInset];
-}
-
--(double)_minInsetsToPushDateOffScreen {
-    double orig = %orig;
-    float yOffset;
-
-    if (orientation == 1 || orientation == 2)
-        yOffset = (timeHeight+(dateHeight/2))-containerHeight+5;
 	else
 		yOffset = 0;
 
-    return orig + yOffset;
+	// update the insets
+	originalInsets.top += yOffset;
+	return originalInsets;
+}
+
+-(void)layoutListView {
+	%orig;
+	[self _updateListViewContentInset];
+}
+
+-(double)_minInsetsToPushDateOffScreen {
+	double orig = %orig;
+	float yOffset;
+
+	if (orientation == 1 || orientation == 2)
+		yOffset = (timeHeight+(dateHeight/2))-containerHeight+5;
+	else
+		yOffset = 0;
+
+	return orig + yOffset;
 }
 %end
 
 
-// toggle vibrancy effect 
-%hook MainView 
+// toggle vibrancy effect
+%hook MainView
 -(void)setDateViewIsVibrant:(BOOL)arg1 {
 	%orig(vibrancy);
 }
 %end
 
 
-//	PREFERENCES 
+//	PREFERENCES
 void preferencesChanged(){
 	NSDictionary *prefs = [[NSUserDefaults standardUserDefaults] persistentDomainForName:@"me.lightmann.texttimeprefs"];
 	isEnabled = (prefs && [prefs objectForKey:@"isEnabled"] ? [[prefs valueForKey:@"isEnabled"] boolValue] : YES );
@@ -416,9 +419,9 @@ void preferencesChanged(){
 %ctor {
 	preferencesChanged();
 
-	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)preferencesChanged, CFSTR("me.lightmann.texttimeprefs-updated"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-
 	if(isEnabled){
+		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)preferencesChanged, CFSTR("me.lightmann.texttimeprefs-updated"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+
 		lockscreenDateVC = @"SBLockScreenDateViewController";
 		NSString *combinedListViewControllerClass = @"SBDashBoardCombinedListViewController";
 		NSString *mainViewClass = @"SBDashBoardView";

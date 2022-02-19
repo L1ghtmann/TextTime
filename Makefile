@@ -1,5 +1,6 @@
-DEBUG=0
-ARCHS = arm64 arm64e
+export DEBUG = 0
+export ARCHS = arm64 arm64e
+export TARGET = iphone:clang:latest:12.0
 
 INSTALL_TARGET_PROCESSES = SpringBoard
 
@@ -11,5 +12,7 @@ TextTime_FILES = Tweak.xm
 TextTime_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
-SUBPROJECTS += texttimeprefs
+
+SUBPROJECTS += TextTimePrefs
+
 include $(THEOS_MAKE_PATH)/aggregate.mk
